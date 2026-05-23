@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Platformer Game</title>
+    <title>Platformer Game - С Врагами и Уровнями</title>
     <style>
         body {
             background-color: #111;
@@ -28,6 +28,7 @@ window.onload = function() {
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
+    // Настройки игрока
     const player = {
         x: 50, y: 0, width: 30, height: 50, color: 'lime',
         vy: 0, speed: 5, jumpStrength: 15, onGround: false
@@ -35,25 +36,83 @@ window.onload = function() {
 
     const gravity = 0.8;
     const keys = {};
-
-    const platforms = [
-        {x: 0, y: 450, width: 800, height: 50, color: 'brown'},
-        {x: 200, y: 350, width: 120, height: 20, color: 'brown'},
-        {x: 400, y: 250, width: 150, height: 20, color: 'brown'},
-        {x: 600, y: 150, width: 100, height: 20, color: 'brown'}
-    ];
-
-    const coins = [
-        {x: 220, y: 330, size: 10, collected: false},
-        {x: 430, y: 230, size: 10, collected: false},
-        {x: 620, y: 130, size: 10, collected: false}
-    ];
-
     let score = 0;
+    let currentLevel = 0;
 
+    // База данных уровней
+    const levels = [
+        {
+            startX: 50, startY: 300,
+            door: { x: 720, y: 90, width: 40, height: 60, color: 'royalblue' },
+            platforms: [
+                {x: 0, y: 450, width: 800, height: 50, color: 'brown'},
+                {x: 200, y: 350, width: 150, height: 20, color: 'brown'},
+                {x: 450, y: 230, width: 150, height: 20, color: 'brown'},
+                {x: 700, y: 150, width: 100, height: 20, color: 'brown'}
+            ],
+            coins: [
+                {x: 250, y: 320, size: 10, collected: false},
+                {x: 500, y: 200, size: 10, collected: false}
+            ],
+            enemies: [
+                {x: 210, y: 320, width: 30, height: 30, color: 'red', speed: 2, minX: 200, maxX: 320}
+            ]
+        },
+        {
+            startX: 50, startY: 400,
+            door: { x: 50, y: 90, width: 40, height: 60, color: 'royalblue' },
+            platforms: [
+                {x: 0, y: 450, width: 800, height: 50, color: 'brown'},
+                {x: 50, y: 150, width: 120, height: 20, color: 'brown'},
+                {x: 250, y: 230, width: 160, height: 20, color: 'brown'},
+                {x: 500, y: 320, width: 200, height: 20, color: 'brown'}
+            ],
+            coins: [
+                {x: 550, y: 290, size: 10, collected: false},
+                {x: 320, y: 200, size: 10, collected: false},
+                {x: 90, y: 120, size: 10, collected: false}
+            ],
+            enemies: [
+                {x: 510, y: 290, width: 30, height: 30, color: 'red', speed: 3, minX: 500, maxX: 670},
+                {x: 260, y: 200, width: 30, height: 30, color: 'red', speed: -2, minX: 250, maxX: 380}
+            ]
+        }
+    ];
+
+    // Текущие объекты на экране (загружаются из БД уровней)
+    let platforms = [];
+    let coins = [];
+    let enemies = [];
+    let door = {};
+
+    function loadLevel(levelIndex) {
+        if (levelIndex >= levels.length) {
+            alert("Поздравляем! Вы прошли все уровни!");
+            currentLevel = 0; // Начать заново
+            score = 0;
+            // Сбрасываем монеты во всей БД для перезапуска
+            levels.forEach(lvl => lvl.coins.forEach(c => c.collected = false));
+        } else {
+            currentLevel = levelIndex;
+        }
+
+        const lvl = levels[currentLevel];
+        player.x = lvl.startX;
+        player.y = lvl.startY;
+        player.vy = 0;
+        
+        // Глубокое копирование объектов уровня
+        platforms = JSON.parse(JSON.stringify(lvl.platforms));
+        coins = JSON.parse(JSON.stringify(lvl.coins));
+        enemies = JSON.parse(JSON.stringify(lvl.enemies));
+        door = JSON.parse(JSON.stringify(lvl.door));
+    }
+
+    // Слушатели клавиатуры
     document.addEventListener('keydown', (e) => { keys[e.key] = true; });
     document.addEventListener('keyup', (e) => { keys[e.key] = false; });
 
+    // Функция проверки столкновений
     function checkCollision(rect1, rect2) {
         return rect1.x < rect2.x + rect2.width &&
                rect1.x + rect1.width > rect2.x &&
@@ -61,7 +120,11 @@ window.onload = function() {
                rect1.y + rect1.height > rect2.y;
     }
 
+    // Загружаем самый первый уровень при старте
+    loadLevel(0);
+
     function gameLoop() {
+        // Движение игрока
         if (keys['ArrowLeft'] || keys['a'] || keys['A'] || keys['ф'] || keys['Ф']) player.x -= player.speed;
         if (keys['ArrowRight'] || keys['d'] || keys['D'] || keys['в'] || keys['В']) player.x += player.speed;
         
@@ -75,6 +138,7 @@ window.onload = function() {
         
         let onGroundNext = false;
 
+        // Столкновения с платформами
         for (const plat of platforms) {
             if (checkCollision(player, plat)) {
                 if (player.vy >= 0 && player.y + player.height - player.vy <= plat.y + 5) {
@@ -86,14 +150,25 @@ window.onload = function() {
         }
         player.onGround = onGroundNext;
 
+        // Границы экрана
         if (player.x < 0) player.x = 0;
         if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
         if (player.y + player.height > canvas.height) {
-            player.y = canvas.height - player.height;
-            player.vy = 0;
-            player.onGround = true;
+            loadLevel(currentLevel); // Упал в пропасть — рестарт уровня
         }
 
+        // Логика врагов (патрулирование и урон)
+        for (const enemy of enemies) {
+            enemy.x += enemy.speed;
+            if (enemy.x <= enemy.minX || enemy.x + enemy.width >= enemy.maxX) {
+                enemy.speed = -enemy.speed; // Разворот
+            }
+            if (checkCollision(player, enemy)) {
+                loadLevel(currentLevel); // Столкнулся с врагом — рестарт уровня
+            }
+        }
+
+        // Сбор монет
         for (const coin of coins) {
             if (!coin.collected &&
                 player.x < coin.x + coin.size && 
@@ -105,13 +180,30 @@ window.onload = function() {
             }
         }
 
+        // Проверка победы (все ли монеты уровня собраны)
+        const allCoinsCollected = coins.every(coin => coin.collected);
+
+        // Вход в дверь перехода на следующий уровень
+        if (allCoinsCollected && checkCollision(player, door)) {
+            loadLevel(currentLevel + 1);
+        }
+
+        // ОТРИСОВКА
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+        // Платформы
         for (const plat of platforms) {
             ctx.fillStyle = plat.color;
             ctx.fillRect(plat.x, plat.y, plat.width, plat.height);
         }
 
+        // Дверь (меняет прозрачность, если заблокирована)
+        ctx.fillStyle = door.color;
+        ctx.globalAlpha = allCoinsCollected ? 1.0 : 0.4;
+        ctx.fillRect(door.x, door.y, door.width, door.height);
+        ctx.globalAlpha = 1.0; // Сброс прозрачности
+
+        // Монеты
         for (const coin of coins) {
             if (!coin.collected) {
                 ctx.fillStyle = 'gold';
@@ -121,12 +213,26 @@ window.onload = function() {
             }
         }
 
+        // Враги
+        for (const enemy of enemies) {
+            ctx.fillStyle = enemy.color;
+            ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+        }
+
+        // Игрок
         ctx.fillStyle = player.color;
         ctx.fillRect(player.x, player.y, player.width, player.height);
 
+        // Интерфейс текста
         ctx.fillStyle = 'white';
         ctx.font = '20px Arial';
-        ctx.fillText('Собрано монет: ' + score, 10, 30);
+        ctx.fillText('Уровень: ' + (currentLevel + 1), 10, 30);
+        ctx.fillText('Монеты: ' + score, 150, 30);
+        if (!allCoinsCollected) {
+            ctx.fillStyle = 'orange';
+            ctx.font = '14px Arial';
+            ctx.fillText('Соберите все монеты, чтобы открыть синюю дверь!', 10, 60);
+        }
 
         requestAnimationFrame(gameLoop);
     }
@@ -135,4 +241,4 @@ window.onload = function() {
 };
 </script>
 </body>
-</html> 
+</html>
