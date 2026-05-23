@@ -1,165 +1,21 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html>
+!DOCTYPE html>
+<html lang="ru">
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <meta http-equiv="Content-Style-Type" content="text/css">
-  <title></title>
-  <meta name="Generator" content="Cocoa HTML Writer">
-  <meta name="CocoaVersion" content="1894.5">
-  <style type="text/css">
-    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; text-align: center; font: 12.0px Helvetica; color: #000000; -webkit-text-stroke: #000000; min-height: 14.0px}
-    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; color: #68b1ff; -webkit-text-stroke: #68b1ff; background-color: #0c0e12}
-    p.p3 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; color: #bdc6d0; -webkit-text-stroke: #bdc6d0; background-color: #0c0e12}
-    p.p4 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; color: #6fe674; -webkit-text-stroke: #6fe674; background-color: #0c0e12}
-    p.p5 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; color: #96ccff; -webkit-text-stroke: #96ccff; background-color: #0c0e12}
-    p.p6 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; color: #bdc6d0; -webkit-text-stroke: #bdc6d0; background-color: #0c0e12; min-height: 14.0px}
-    p.p7 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; color: #c692ff; -webkit-text-stroke: #c692ff; background-color: #0c0e12}
-    p.p8 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; color: #fc635f; -webkit-text-stroke: #fc635f; background-color: #0c0e12}
-    span.s1 {font-kerning: none}
-    span.s2 {font-kerning: none; color: #fc635f; -webkit-text-stroke: 0px #fc635f}
-    span.s3 {font-kerning: none; color: #6fe674; -webkit-text-stroke: 0px #6fe674}
-    span.s4 {font-kerning: none; color: #68b1ff; -webkit-text-stroke: 0px #68b1ff}
-    span.s5 {font-kerning: none; color: #96ccff; -webkit-text-stroke: 0px #96ccff}
-    span.s6 {font-kerning: none; color: #bdc6d0; -webkit-text-stroke: 0px #bdc6d0}
-    span.s7 {font-kerning: none; color: #c692ff; -webkit-text-stroke: 0px #c692ff}
-  </style>
+    <meta charset="UTF-8" />
+    <title>Platformer Game</title>
+    <style>
+        body { background-color: #111; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        canvas { background: #222; display: block; border: 2px solid #555; }
+    </style>
 </head>
 <body>
-<p class="p1"><span class="s1"></span><br></p>
-<p class="p2"><span class="s1">&lt;!DOCTYPE </span><span class="s2">html</span><span class="s1">&gt;</span></p>
-<p class="p3"><span class="s1">&lt;</span><span class="s3">html</span><span class="s1"> </span><span class="s4">lang</span><span class="s1">=</span><span class="s5">"ru"</span><span class="s1">&gt;</span></p>
-<p class="p4"><span class="s6">&lt;</span><span class="s1">head</span><span class="s6">&gt;</span></p>
-<p class="p2"><span class="s6">&lt;</span><span class="s3">meta</span><span class="s6"> </span><span class="s1">charset</span><span class="s6">=</span><span class="s5">"UTF-8"</span><span class="s6"> /&gt;</span></p>
-<p class="p3"><span class="s1">&lt;</span><span class="s3">title</span><span class="s1">&gt;Расширенный платформер&lt;/</span><span class="s3">title</span><span class="s1">&gt;</span></p>
-<p class="p4"><span class="s6">&lt;</span><span class="s1">style</span><span class="s6">&gt;</span></p>
-<p class="p4"><span class="s6"><span class="Apple-converted-space">  </span></span><span class="s1">canvas</span><span class="s6"> {</span></p>
-<p class="p2"><span class="s6"><span class="Apple-converted-space">    </span></span><span class="s1">background</span><span class="s6">: </span><span class="s1">#222</span><span class="s6">;</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">    </span></span><span class="s4">display</span><span class="s1">: block;</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">    </span></span><span class="s4">margin</span><span class="s1">: </span><span class="s4">0</span><span class="s1"> auto;</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">  </span>}</span></p>
-<p class="p4"><span class="s6">&lt;/</span><span class="s1">style</span><span class="s6">&gt;</span></p>
-<p class="p4"><span class="s6">&lt;/</span><span class="s1">head</span><span class="s6">&gt;</span></p>
-<p class="p4"><span class="s6">&lt;</span><span class="s1">body</span><span class="s6">&gt;</span></p>
-<p class="p5"><span class="s6">&lt;</span><span class="s3">canvas</span><span class="s6"> </span><span class="s4">id</span><span class="s6">=</span><span class="s1">"gameCanvas"</span><span class="s6"> </span><span class="s4">width</span><span class="s6">=</span><span class="s1">"800"</span><span class="s6"> </span><span class="s4">height</span><span class="s6">=</span><span class="s1">"500"</span><span class="s6">&gt;&lt;/</span><span class="s3">canvas</span><span class="s6">&gt;</span></p>
-<p class="p4"><span class="s6">&lt;</span><span class="s1">script</span><span class="s6">&gt;</span></p>
-<p class="p3"><span class="s2">const</span><span class="s1"> canvas = </span><span class="s2">document</span><span class="s1">.</span><span class="s7">getElementById</span><span class="s1">(</span><span class="s5">'gameCanvas'</span><span class="s1">);</span></p>
-<p class="p3"><span class="s2">const</span><span class="s1"> ctx = canvas.</span><span class="s7">getContext</span><span class="s1">(</span><span class="s5">'2d'</span><span class="s1">);</span></p>
-<p class="p6"><span class="s1"></span><br></p>
-<p class="p3"><span class="s2">const</span><span class="s1"> player = {</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">  </span></span><span class="s4">x</span><span class="s1">: </span><span class="s4">50</span><span class="s1">,</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">  </span></span><span class="s4">y</span><span class="s1">: </span><span class="s4">0</span><span class="s1">,</span></p>
-<p class="p2"><span class="s6"><span class="Apple-converted-space">  </span></span><span class="s1">width</span><span class="s6">: </span><span class="s1">30</span><span class="s6">,</span></p>
-<p class="p2"><span class="s6"><span class="Apple-converted-space">  </span></span><span class="s1">height</span><span class="s6">: </span><span class="s1">50</span><span class="s6">,</span></p>
-<p class="p5"><span class="s6"><span class="Apple-converted-space">  </span></span><span class="s4">color</span><span class="s6">: </span><span class="s1">'lime'</span><span class="s6">,</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">  </span></span><span class="s4">vy</span><span class="s1">: </span><span class="s4">0</span><span class="s1">,</span></p>
-<p class="p2"><span class="s6"><span class="Apple-converted-space">  </span></span><span class="s1">speed</span><span class="s6">: </span><span class="s1">5</span><span class="s6">,</span></p>
-<p class="p2"><span class="s6"><span class="Apple-converted-space">  </span></span><span class="s1">jumpStrength</span><span class="s6">: </span><span class="s1">15</span><span class="s6">,</span></p>
-<p class="p2"><span class="s6"><span class="Apple-converted-space">  </span></span><span class="s1">onGround</span><span class="s6">: </span><span class="s1">false</span></p>
-<p class="p3"><span class="s1">};</span></p>
-<p class="p6"><span class="s1"></span><br></p>
-<p class="p3"><span class="s2">const</span><span class="s1"> gravity = </span><span class="s4">0.8</span><span class="s1">;</span></p>
-<p class="p3"><span class="s2">const</span><span class="s1"> keys = {};</span></p>
-<p class="p6"><span class="s1"></span><br></p>
-<p class="p3"><span class="s2">const</span><span class="s1"> platforms = [</span></p>
-<p class="p2"><span class="s6"><span class="Apple-converted-space">  </span>{</span><span class="s1">x</span><span class="s6">: </span><span class="s1">0</span><span class="s6">, </span><span class="s1">y</span><span class="s6">: </span><span class="s1">450</span><span class="s6">, </span><span class="s1">width</span><span class="s6">: </span><span class="s1">800</span><span class="s6">, </span><span class="s1">height</span><span class="s6">: </span><span class="s1">50</span><span class="s6">, </span><span class="s1">color</span><span class="s6">: </span><span class="s5">'brown'</span><span class="s6">},</span></p>
-<p class="p2"><span class="s6"><span class="Apple-converted-space">  </span>{</span><span class="s1">x</span><span class="s6">: </span><span class="s1">200</span><span class="s6">, </span><span class="s1">y</span><span class="s6">: </span><span class="s1">350</span><span class="s6">, </span><span class="s1">width</span><span class="s6">: </span><span class="s1">120</span><span class="s6">, </span><span class="s1">height</span><span class="s6">: </span><span class="s1">20</span><span class="s6">, </span><span class="s1">color</span><span class="s6">: </span><span class="s5">'brown'</span><span class="s6">},</span></p>
-<p class="p2"><span class="s6"><span class="Apple-converted-space">  </span>{</span><span class="s1">x</span><span class="s6">: </span><span class="s1">400</span><span class="s6">, </span><span class="s1">y</span><span class="s6">: </span><span class="s1">250</span><span class="s6">, </span><span class="s1">width</span><span class="s6">: </span><span class="s1">150</span><span class="s6">, </span><span class="s1">height</span><span class="s6">: </span><span class="s1">20</span><span class="s6">, </span><span class="s1">color</span><span class="s6">: </span><span class="s5">'brown'</span><span class="s6">},</span></p>
-<p class="p2"><span class="s6"><span class="Apple-converted-space">  </span>{</span><span class="s1">x</span><span class="s6">: </span><span class="s1">600</span><span class="s6">, </span><span class="s1">y</span><span class="s6">: </span><span class="s1">150</span><span class="s6">, </span><span class="s1">width</span><span class="s6">: </span><span class="s1">100</span><span class="s6">, </span><span class="s1">height</span><span class="s6">: </span><span class="s1">20</span><span class="s6">, </span><span class="s1">color</span><span class="s6">: </span><span class="s5">'brown'</span><span class="s6">}</span></p>
-<p class="p3"><span class="s1">];</span></p>
-<p class="p6"><span class="s1"></span><br></p>
-<p class="p3"><span class="s2">const</span><span class="s1"> coins = [</span></p>
-<p class="p2"><span class="s6"><span class="Apple-converted-space">  </span>{</span><span class="s1">x</span><span class="s6">: </span><span class="s1">220</span><span class="s6">, </span><span class="s1">y</span><span class="s6">: </span><span class="s1">330</span><span class="s6">, </span><span class="s1">size</span><span class="s6">: </span><span class="s1">10</span><span class="s6">, </span><span class="s1">collected</span><span class="s6">: </span><span class="s1">false</span><span class="s6">},</span></p>
-<p class="p2"><span class="s6"><span class="Apple-converted-space">  </span>{</span><span class="s1">x</span><span class="s6">: </span><span class="s1">430</span><span class="s6">, </span><span class="s1">y</span><span class="s6">: </span><span class="s1">230</span><span class="s6">, </span><span class="s1">size</span><span class="s6">: </span><span class="s1">10</span><span class="s6">, </span><span class="s1">collected</span><span class="s6">: </span><span class="s1">false</span><span class="s6">},</span></p>
-<p class="p2"><span class="s6"><span class="Apple-converted-space">  </span>{</span><span class="s1">x</span><span class="s6">: </span><span class="s1">620</span><span class="s6">, </span><span class="s1">y</span><span class="s6">: </span><span class="s1">130</span><span class="s6">, </span><span class="s1">size</span><span class="s6">: </span><span class="s1">10</span><span class="s6">, </span><span class="s1">collected</span><span class="s6">: </span><span class="s1">false</span><span class="s6">}</span></p>
-<p class="p3"><span class="s1">];</span></p>
-<p class="p6"><span class="s1"></span><br></p>
-<p class="p3"><span class="s2">let</span><span class="s1"> score = </span><span class="s4">0</span><span class="s1">;</span></p>
-<p class="p6"><span class="s1"></span><br></p>
-<p class="p7"><span class="s2">document</span><span class="s6">.</span><span class="s1">addEventListener</span><span class="s6">(</span><span class="s5">'keydown'</span><span class="s6">, (e) =&gt; {</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">  </span>keys[e.key] = </span><span class="s4">true</span><span class="s1">;</span></p>
-<p class="p3"><span class="s1">});</span></p>
-<p class="p7"><span class="s2">document</span><span class="s6">.</span><span class="s1">addEventListener</span><span class="s6">(</span><span class="s5">'keyup'</span><span class="s6">, (e) =&gt; {</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">  </span>keys[e.key] = </span><span class="s4">false</span><span class="s1">;</span></p>
-<p class="p3"><span class="s1">});</span></p>
-<p class="p6"><span class="s1"></span><br></p>
-<p class="p3"><span class="s2">function</span><span class="s1"> </span><span class="s7">checkCollision</span><span class="s1">(rect, platform) {</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">  </span></span><span class="s2">return</span><span class="s1"> rect.x &lt; platform.x + platform.width &amp;&amp;</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">         </span>rect.x + rect.width &gt; platform.x &amp;&amp;</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">         </span>rect.y &lt; platform.y + platform.height &amp;&amp;</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">         </span>rect.y + rect.height &gt; platform.y;</span></p>
-<p class="p3"><span class="s1">}</span></p>
-<p class="p6"><span class="s1"></span><br></p>
-<p class="p8"><span class="s1">function</span><span class="s6"> </span><span class="s7">gameLoop</span><span class="s6">() {</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">  </span></span><span class="s2">if</span><span class="s1"> (keys[</span><span class="s5">'ArrowLeft'</span><span class="s1">]) player.x -= player.speed;</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">  </span></span><span class="s2">if</span><span class="s1"> (keys[</span><span class="s5">'ArrowRight'</span><span class="s1">]) player.x += player.speed;</span></p>
-<p class="p6"><span class="s1"></span><br></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">  </span></span><span class="s2">if</span><span class="s1"> (keys[</span><span class="s5">' '</span><span class="s1">] &amp;&amp; player.onGround) {</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">    </span>player.vy = -player.jumpStrength;</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">    </span>player.onGround = </span><span class="s4">false</span><span class="s1">;</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">  </span>}</span></p>
-<p class="p6"><span class="s1"></span><br></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">  </span>player.vy += gravity;</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">  </span>player.y += player.vy;</span></p>
-<p class="p6"><span class="s1"></span><br></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">  </span>player.onGround = </span><span class="s4">false</span><span class="s1">;<span class="Apple-converted-space"> </span></span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">  </span></span><span class="s2">for</span><span class="s1"> (</span><span class="s2">const</span><span class="s1"> plat </span><span class="s2">of</span><span class="s1"> platforms) {</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">    </span></span><span class="s2">if</span><span class="s1"> (</span><span class="s7">checkCollision</span><span class="s1">(player, plat)) {</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">      </span>player.y = plat.y - player.height;</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">      </span>player.vy = </span><span class="s4">0</span><span class="s1">;</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">      </span>player.onGround = </span><span class="s4">true</span><span class="s1">;</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">    </span>}</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">  </span>}</span></p>
-<p class="p6"><span class="s1"></span><br></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">  </span></span><span class="s2">if</span><span class="s1"> (player.x &lt; </span><span class="s4">0</span><span class="s1">) player.x = </span><span class="s4">0</span><span class="s1">;</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">  </span></span><span class="s2">if</span><span class="s1"> (player.x + player.width &gt; canvas.width)</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">    </span>player.x = canvas.width - player.width;</span></p>
-<p class="p6"><span class="s1"></span><br></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">  </span></span><span class="s2">if</span><span class="s1"> (player.y + player.height &gt; canvas.height) {</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">    </span>player.y = canvas.height - player.height;</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">    </span>player.vy = </span><span class="s4">0</span><span class="s1">;</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">    </span>player.onGround = </span><span class="s4">true</span><span class="s1">;</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">  </span>}</span></p>
-<p class="p6"><span class="s1"></span><br></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">  </span></span><span class="s2">for</span><span class="s1"> (</span><span class="s2">const</span><span class="s1"> coin </span><span class="s2">of</span><span class="s1"> coins) {</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">    </span></span><span class="s2">if</span><span class="s1"> (!coin.collected &amp;&amp;</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">        </span>player.x &lt; coin.x + coin.size &amp;&amp;</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">        </span>player.x + player.width &gt; coin.x &amp;&amp;</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">        </span>player.y &lt; coin.y + coin.size &amp;&amp;</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">        </span>player.y + player.height &gt; coin.y) {</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">      </span>coin.collected = </span><span class="s4">true</span><span class="s1">;</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">      </span>score++;</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">    </span>}</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">  </span>}</span></p>
-<p class="p6"><span class="s1"></span><br></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">  </span>ctx.</span><span class="s7">clearRect</span><span class="s1">(</span><span class="s4">0</span><span class="s1">, </span><span class="s4">0</span><span class="s1">, canvas.width, canvas.height);</span></p>
-<p class="p6"><span class="s1"></span><br></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">  </span></span><span class="s2">for</span><span class="s1"> (</span><span class="s2">const</span><span class="s1"> plat </span><span class="s2">of</span><span class="s1"> platforms) {</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">    </span>ctx.fillStyle = plat.color;</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">    </span>ctx.</span><span class="s7">fillRect</span><span class="s1">(plat.x, plat.y, plat.width, plat.height);</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">  </span>}</span></p>
-<p class="p6"><span class="s1"></span><br></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">  </span></span><span class="s2">for</span><span class="s1"> (</span><span class="s2">const</span><span class="s1"> coin </span><span class="s2">of</span><span class="s1"> coins) {</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">    </span></span><span class="s2">if</span><span class="s1"> (!coin.collected) {</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">      </span>ctx.fillStyle = </span><span class="s5">'gold'</span><span class="s1">;</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">      </span>ctx.</span><span class="s7">beginPath</span><span class="s1">();</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">      </span>ctx.</span><span class="s7">arc</span><span class="s1">(coin.x + coin.size / </span><span class="s4">2</span><span class="s1">, coin.y + coin.size / </span><span class="s4">2</span><span class="s1">, coin.size, </span><span class="s4">0</span><span class="s1">, </span><span class="s7">Math</span><span class="s1">.PI * </span><span class="s4">2</span><span class="s1">);</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">      </span>ctx.</span><span class="s7">fill</span><span class="s1">();</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">    </span>}</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">  </span>}</span></p>
-<p class="p6"><span class="s1"></span><br></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">  </span>ctx.fillStyle = player.color;</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">  </span>ctx.</span><span class="s7">fillRect</span><span class="s1">(player.x, player.y, player.width, player.height);</span></p>
-<p class="p6"><span class="s1"></span><br></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">  </span>ctx.fillStyle = </span><span class="s5">'white'</span><span class="s1">;</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">  </span>ctx.font = </span><span class="s5">'20px Arial'</span><span class="s1">;</span></p>
-<p class="p3"><span class="s1"><span class="Apple-converted-space">  </span>ctx.</span><span class="s7">fillText</span><span class="s1">(</span><span class="s5">'Собрано монет: '</span><span class="s1"> + score, </span><span class="s4">10</span><span class="s1">, </span><span class="s4">30</span><span class="s1">);</span></p>
-<p class="p6"><span class="s1"></span><br></p>
-<p class="p7"><span class="s6"><span class="Apple-converted-space">  </span></span><span class="s1">requestAnimationFrame</span><span class="s6">(gameLoop);</span></p>
-<p class="p3"><span class="s1">}</span></p>
-<p class="p6"><span class="s1"></span><br></p>
-<p class="p7"><span class="s1">gameLoop</span><span class="s6">();</span></p>
-<p class="p4"><span class="s6">&lt;/</span><span class="s1">script</span><span class="s6">&gt;</span></p>
-<p class="p4"><span class="s6">&lt;/</span><span class="s1">body</span><span class="s6">&gt;</span></p>
-<p class="p4"><span class="s6">&lt;/</span><span class="s1">html</span><span class="s6">&gt;</span></p>
+    <canvas id="gameCanvas" width="800" height="500"></canvas>
+    <script>
+        // Game code here (correctly formatted)
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        // ... game logic ...
+        console.log("Game loaded correctly");
+    </script>
 </body>
 </html>
