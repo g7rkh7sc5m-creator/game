@@ -2,11 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Platformer Game - Приложение</title>
-    <!-- Теги для мобильных устройств и PWA приложения -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <title>Platformer Game - PHONK Edition</title>
     <link rel="manifest" href="manifest.json">
     <style>
         body {
@@ -19,55 +15,70 @@
             margin: 0;
             font-family: Arial, sans-serif;
             overflow: hidden;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        .game-container {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
         canvas {
             display: block;
-            border: 3px solid #555;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            max-width: 100%;
-            max-height: 85vh;
+            border: 3px solid #ff0055;
+            box-shadow: 0 0 25px rgba(255, 0, 85, 0.4);
+            width: 100%;
+            height: auto;
+            max-height: 75vh;
+            background: #111;
         }
         #installBtn {
             display: none;
-            margin-bottom: 10px;
-            padding: 8px 16px;
-            background: lime;
-            color: black;
+            margin-bottom: 15px;
+            padding: 10px 20px;
+            background: #ff0055;
+            color: white;
             border: none;
             font-weight: bold;
+            font-size: 16px;
             border-radius: 5px;
             cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            transition: transform 0.1s;
+        }
+        #installBtn:active {
+            transform: scale(0.95);
         }
     </style>
 </head>
 <body>
 
-<!-- Кнопка установки приложения -->
-<button id="installBtn">📥 Установить как приложение</button>
-
-<canvas id="gameCanvas" width="800" height="500"></canvas>
+<div class="game-container">
+    <button id="installBtn">📥 Установить как приложение на ПК</button>
+    <canvas id="gameCanvas" width="800" height="500"></canvas>
+</div>
 
 <script>
-// СКРИПТ ПРИЛОЖЕНИЯ (PWA)
 let deferredPrompt;
 const installBtn = document.getElementById('installBtn');
+
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
     installBtn.style.display = 'block';
 });
+
 installBtn.addEventListener('click', async () => {
     if (deferredPrompt) {
         deferredPrompt.prompt();
         const { outcome } = await deferredPrompt.userChoice;
-        if (outcome === 'accepted') {
-            installBtn.style.display = 'none';
-        }
+        if (outcome === 'accepted') installBtn.style.display = 'none';
         deferredPrompt = null;
     }
 });
 
-// РЕГИСТРАЦИЯ СЕРВИС-ВОРКЕРА ДЛЯ СКАЧИВАНИЯ ИГРЫ НА ПК
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
 }
@@ -76,8 +87,98 @@ window.onload = function() {
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
+    // --- ЗВУКОВОЙ ФОНК-ДВИЖОК (SEN PARAR) ---
+    let audioCtx = null;
+    let musicInterval = null;
+
+    function initAudio() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            startPhonkMusic();
+        }
+    }
+
+    function playSound(type) {
+        if (!audioCtx) return;
+        let osc = audioCtx.createOscillator();
+        let gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        let now = audioCtx.currentTime;
+
+        if (type === 'jump') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(120, now);
+            osc.frequency.exponentialRampToValueAtTime(500, now + 0.12);
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+            osc.start(now); osc.stop(now + 0.12);
+        } 
+        else if (type === 'coin') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(587.33, now); // Ре
+            osc.frequency.setValueAtTime(698.46, now + 0.06); // Фа
+            gain.gain.setValueAtTime(0.15, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+            osc.start(now); osc.stop(now + 0.2);
+        } 
+        else if (type === 'death') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(200, now);
+            osc.frequency.linearRampToValueAtTime(50, now + 0.5);
+            gain.gain.setValueAtTime(0.3, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+            osc.start(now); osc.stop(now + 0.5);
+        }
+    }
+
+    function startPhonkMusic() {
+        if (musicInterval) clearInterval(musicInterval);
+        let step = 0;
+        
+        // Мелодия и тяжелый бас для фонка (Sen Parar мотивы)
+        const melody = [146.83, 146.83, 164.81, 146.83, 196.00, 196.00, 174.61, 164.81];
+        const bass = [73.42, 73.42, 82.41, 73.42, 98.00, 98.00, 87.31, 82.41];
+        
+        let tempo = 140; // Скорость бита (Phonk BPM)
+        if (currentWorld.name.includes("Вулкан")) tempo = 115; // Еще быстрее
+        if (currentWorld.name.includes("Космос")) tempo = 180; // Замедленный фонк
+
+        musicInterval = setInterval(() => {
+            if (!audioCtx) return;
+            let now = audioCtx.currentTime;
+
+            // 1. Мелодия (Лид)
+            let oscL = audioCtx.createOscillator();
+            let gainL = audioCtx.createGain();
+            oscL.type = 'square';
+            oscL.connect(gainL);
+            gainL.connect(audioCtx.destination);
+            oscL.frequency.setValueAtTime(melody[step % melody.length], now);
+            gainL.gain.setValueAtTime(0.02, now);
+            gainL.gain.exponentialRampToValueAtTime(0.001, now + (tempo / 1000) - 0.02);
+            oscL.start(now); oscL.stop(now + (tempo / 1000) - 0.01);
+
+            // 2. Фонк Бас (Тяжелый и жесткий)
+            if (step % 2 === 0) {
+                let oscB = audioCtx.createOscillator();
+                let gainB = audioCtx.createGain();
+                oscB.type = 'sawtooth';
+                oscB.connect(gainB);
+                gainB.connect(audioCtx.destination);
+                oscB.frequency.setValueAtTime(bass[step % bass.length], now);
+                gainB.gain.setValueAtTime(0.05, now);
+                gainB.gain.exponentialRampToValueAtTime(0.001, now + (tempo / 500));
+                oscB.start(now); oscB.stop(now + (tempo / 500));
+            }
+
+            step++;
+        }, tempo);
+    }
+    // ---------------------------------------
+
     const player = {
-        x: 50, y: 0, width: 30, height: 50, color: 'lime',
+        x: 50, y: 0, width: 30, height: 50, color: '#00ffaa',
         vy: 0, speed: 5, jumpStrength: 15, onGround: false, jumpCount: 0
     };
 
@@ -89,26 +190,32 @@ window.onload = function() {
     let jumpEffect = { x: 0, y: 0, radius: 0, active: false };
 
     const worlds = [
-        { name: "🌲 Лесной Мир", bg: "#1a2f1a", platColor: "#4a7c59", gravity: 0.8, speedBonus: 0, jumpBonus: 0 },
-        { name: "🏜️ Пустынный Мир", bg: "#3d311d", platColor: "#d4a373", gravity: 0.8, speedBonus: 2, jumpBonus: 0 },
-        { name: "🌋 Вулканический Мир", bg: "#2b1111", platColor: "#b23b3b", gravity: 1.1, speedBonus: 0, jumpBonus: 2 },
-        { name: "🌌 Космический Мир", bg: "#11112b", platColor: "#6a5acd", gravity: 0.3, speedBonus: -1, jumpBonus: -4 }
+        { name: "🌲 Лесной Мир (Phonk)", bg: "#152215", platColor: "#ff0055", gravity: 0.8, speedBonus: 0, jumpBonus: 0 },
+        { name: "🏜️ Пустынный Мир", bg: "#2b2215", platColor: "#ffaa00", gravity: 0.8, speedBonus: 2, jumpBonus: 0 },
+        { name: "🌋 Вулканический Мир", bg: "#220c0c", platColor: "#ff3300", gravity: 1.1, speedBonus: 0, jumpBonus: 2 },
+        { name: "🌌 Космический Мир", bg: "#0c0c22", platColor: "#aa00ff", gravity: 0.3, speedBonus: -1, jumpBonus: -4 }
     ];
-    let currentWorld = worlds[0];
+    let currentWorld = worlds;
 
     let platforms = [];
     let coins = [];
     let enemies = [];
-    let door = { x: 720, y: 0, width: 40, height: 60, color: 'royalblue' };
+    let door = { x: 720, y: 0, width: 40, height: 60, color: '#00ffff' };
 
     function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 
     function updateWorldSettings() {
         let worldIndex = Math.floor((currentLevel - 1) / 5) % worlds.length;
+        let oldWorld = currentWorld;
         currentWorld = worlds[worldIndex];
+        
         gravity = currentWorld.gravity;
         player.speed = 5 + currentWorld.speedBonus;
         player.jumpStrength = 15 + currentWorld.jumpBonus;
+
+        if (oldWorld.name !== currentWorld.name && audioCtx) {
+            startPhonkMusic();
+        }
     }
 
     function generateLevel(levelNumber) {
@@ -117,131 +224,55 @@ window.onload = function() {
         platforms = []; coins = []; enemies = []; jumpEffect.active = false;
 
         platforms.push({x: 0, y: 450, width: 800, height: 50, color: currentWorld.platColor});
-        const platformCount = rand(3, 5);
+        const platformCount = rand(3, 4);
         let currentX = 150;
 
         for (let i = 0; i < platformCount; i++) {
-            let platW = rand(100, 160);
-            let platY = (currentWorld.name.includes("Космос")) ? rand(100, 280) : rand(180, 360);
+            let platW = rand(110, 160);
+            let platY = (currentWorld.name.includes("Космос")) ? rand(100, 260) : rand(180, 350);
             platforms.push({ x: currentX, y: platY, width: platW, height: 20, color: currentWorld.platColor });
-            currentX += platW + rand(50, 80); 
+            currentX += platW + rand(55, 85); 
         }
 
-        door.x = rand(650, 740);
-        let lastPlatY = rand(160, 250);
+        door.x = rand(660, 740);
+        let lastPlatY = rand(160, 240);
         platforms.push({ x: door.x - 20, y: lastPlatY + 60, width: 100, height: 20, color: currentWorld.platColor });
         door.y = lastPlatY;
 
         for (let i = 1; i < platforms.length; i++) {
             let p = platforms[i];
-            coins.push({ x: p.x + (p.width / 2), y: p.y - 30, size: 10, collected: false });
+            coins.push({ x: p.x + (p.width / 2) - 5, y: p.y - 30, width: 14, height: 14, size: 7, collected: false });
         }
 
         const maxEnemiesOnLevel = Math.min(3, Math.floor(levelNumber / 2) + 1); 
-        const enemySpeed = 1.5 + (levelNumber * 0.2); 
+        const enemySpeed = 1.5 + (levelNumber * 0.15); 
 
         for (let i = 1; i < platforms.length - 1; i++) {
             if (enemies.length >= maxEnemiesOnLevel) break;
             let p = platforms[i];
             if (p.width > 80) {
                 enemies.push({
-                    x: p.x + 10, y: p.y - 30, width: 30, height: 30, color: '#ff4d4d',
+                    x: p.x + 10, y: p.y - 30, width: 30, height: 30, color: '#ffffff',
                     speed: enemySpeed, minX: p.x, maxX: p.x + p.width
                 });
             }
         }
     }
 
-    document.addEventListener('keydown', (e) => { 
-        if (!keys[e.key]) {
-            if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W' || e.key === 'ц' || e.key === 'Ц') {
-                if (player.onGround || player.jumpCount < 2) {
-                    player.vy = -player.jumpStrength;
-                    player.onGround = false;
-                    player.jumpCount++;
-                    if (player.jumpCount === 2) {
-                        jumpEffect.x = player.x + player.width / 2;
-                        jumpEffect.y = player.y + player.height;
-                        jumpEffect.radius = 5;
-                        jumpEffect.active = true;
-                    }
-                }
+    function triggerJump() {
+        initAudio();
+        if (player.onGround || player.jumpCount < 2) {
+            player.vy = -player.jumpStrength;
+            player.onGround = false;
+            player.jumpCount++;
+            playSound('jump');
+            if (player.jumpCount === 2) {
+                jumpEffect.x = player.x + player.width / 2;
+                jumpEffect.y = player.y + player.height;
+                jumpEffect.radius = 5;
+                jumpEffect.active = true;
             }
         }
-        keys[e.key] = true; 
-    });
-    document.addEventListener('keyup', (e) => { keys[e.key] = false; });
-
-    function checkCollision(rect1, rect2) {
-        return rect1.x < rect2.x + rect2.width && rect1.x + rect1.width > rect2.x &&
-               rect1.y < rect2.y + rect2.height && rect1.y + rect1.height > rect2.y;
     }
 
-    generateLevel(currentLevel);
-
-    function gameLoop() {
-        canvas.style.background = currentWorld.bg;
-        if (keys['ArrowLeft'] || keys['a'] || keys['A'] || keys['ф'] || keys['Ф']) player.x -= player.speed;
-        if (keys['ArrowRight'] || keys['d'] || keys['D'] || keys['в'] || keys['В']) player.x += player.speed;
-        
-        player.vy += gravity; player.y += player.vy;
-        let onGroundNext = false;
-
-        for (const plat of platforms) {
-            if (checkCollision(player, plat)) {
-                if (player.vy >= 0 && player.y + player.height - player.vy <= plat.y + 5) {
-                    player.y = plat.y - player.height; player.vy = 0; onGroundNext = true; player.jumpCount = 0;
-                }
-            }
-        }
-        player.onGround = onGroundNext;
-
-        if (player.x < 0) player.x = 0;
-        if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
-        if (player.y + player.height > canvas.height) generateLevel(currentLevel);
-
-        for (const enemy of enemies) {
-            enemy.x += enemy.speed;
-            if (enemy.x <= enemy.minX || enemy.x + enemy.width >= enemy.maxX) enemy.speed = -enemy.speed;
-            if (checkCollision(player, enemy)) generateLevel(currentLevel);
-        }
-
-       for (const coin of coins) {
-    // Исправлено: центрирование хитбокса монеты под её визуальный круг
-    if (!coin.collected && checkCollision(player, {
-        x: coin.x - coin.size, 
-        y: coin.y - coin.size, 
-        width: coin.size * 2, 
-        height: coin.size * 2
-    })) {
-        coin.collected = true; 
-        score++;
-    }
-}        const allCoinsCollected = coins.every(coin => coin.collected);
-        if (allCoinsCollected && checkCollision(player, door)) {
-            currentLevel++; generateLevel(currentLevel);
-        }
-
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        for (const plat of platforms) { ctx.fillStyle = plat.color; ctx.fillRect(plat.x, plat.y, plat.width, plat.height); }
-        ctx.fillStyle = door.color; ctx.globalAlpha = allCoinsCollected ? 1.0 : 0.3; ctx.fillRect(door.x, door.y, door.width, door.height); ctx.globalAlpha = 1.0;
-        for (const coin of coins) { if (!coin.collected) { ctx.fillStyle = 'gold'; ctx.beginPath(); ctx.arc(coin.x, coin.y, coin.size, 0, Math.PI * 2); ctx.fill(); } }
-        if (jumpEffect.active) {
-            ctx.strokeStyle = 'rgba(255, 255, 255, ' + (1 - jumpEffect.radius / 30) + ')';
-            ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(jumpEffect.x, jumpEffect.y, jumpEffect.radius, 0, Math.PI * 2); ctx.stroke();
-            jumpEffect.radius += 2; if (jumpEffect.radius > 30) jumpEffect.active = false;
-        }
-        for (const enemy of enemies) { ctx.fillStyle = enemy.color; ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height); }
-        ctx.fillStyle = player.color; ctx.fillRect(player.x, player.y, player.width, player.height);
-
-        ctx.fillStyle = 'white'; ctx.font = 'bold 18px Arial'; ctx.fillText(currentWorld.name, 10, 30);
-        ctx.font = '16px Arial'; ctx.fillText('Уровень: ' + currentLevel, 10, 60); ctx.fillText('Счет: ' + score, 150, 60);
-        if (!allCoinsCollected) { ctx.fillStyle = '#ffb300'; ctx.font = '14px Arial'; ctx.fillText('⚠️ Соберите золото!', 10, 90); }
-
-        requestAnimationFrame(gameLoop);
-    }
-    gameLoop();
-};
-</script>
-</body>
-</html>
+Используйте код с осторожностью.document.addEventListener('keydown', (e) => {initAudio();if (!keys[e.key]) {if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W' || e.key === 'ц' || e.key === 'Ц') {triggerJump();}}keys[e.key] = true;});document.addEventListener('keyup', (e) => { keys[e.key] = false; });function checkCollision(rect1, rect2) {return rect1.x < rect2.x + rect2.width &&rect1.x + rect1.width > rect2.x &&rect1.y < rect2.y + rect2.height &&rect1.y + rect1.height > rect2.y;}generateLevel(currentLevel);function gameLoop() {canvas.style.background = currentWorld.bg;if (keys['ArrowLeft'] || keys['a'] || keys['A'] || keys['ф'] || keys['Ф']) player.x -= player.speed;if (keys['ArrowRight'] || keys['d'] || keys['D'] || keys['в'] || keys['В']) player.x += player.speed;player.vy += gravity; player.y += player.vy;let onGroundNext = false;for (const plat of platforms) {if (checkCollision(player, plat)) {if (player.vy >= 0 && player.y + player.height - player.vy <= plat.y + 6) {player.y = plat.y - player.height; player.vy = 0; onGroundNext = true; player.jumpCount = 0;}}}player.onGround = onGroundNext;if (player.x < 0) player.x = 0;if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;if (player.y + player.height > canvas.height) {playSound('death');generateLevel(currentLevel);}for (const enemy of enemies) {enemy.x += enemy.speed;if (enemy.x <= enemy.minX || enemy.x + enemy.width >= enemy.maxX) enemy.speed = -enemy.speed;if (checkCollision(player, enemy)) {playSound('death');generateLevel(currentLevel);}}for (const coin of coins) {if (!coin.collected && checkCollision(player, coin)) {coin.collected = true;score++;playSound('coin');}}const allCoinsCollected = coins.every(coin => coin.collected);if (allCoinsCollected && checkCollision(player, door)) {currentLevel++;generateLevel(currentLevel);}ctx.clearRect(0, 0, canvas.width, canvas.height);for (const plat of platforms) { ctx.fillStyle = plat.color; ctx.fillRect(plat.x, plat.y, plat.width, plat.height); }ctx.fillStyle = door.color; ctx.globalAlpha = allCoinsCollected ? 1.0 : 0.3; ctx.fillRect(door.x, door.y, door.width, door.height); ctx.globalAlpha = 1.0;for (const coin of coins) {if (!coin.collected) {ctx.fillStyle = 'gold';ctx.beginPath();ctx.arc(coin.x + coin.width/2, coin.y + coin.height/2, coin.size, 0, Math.PI * 2);ctx.fill();}}if (jumpEffect.active) {ctx.strokeStyle = 'rgba(255, 255, 255, ' + (1 - jumpEffect.radius / 30) + ')';ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(jumpEffect.x, jumpEffect.y, jumpEffect.radius, 0, Math.PI * 2); ctx.stroke();jumpEffect.radius += 2; if (jumpEffect.radius > 30) jumpEffect.active = false;}for (const enemy of enemies) { ctx.fillStyle = enemy.color; ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height); }ctx.fillStyle = player.color; ctx.fillRect(player.x, player.y, player.width, player.height);ctx.fillStyle = 'white'; ctx.font = 'bold 18px Arial'; ctx.fillText(currentWorld.name, 10, 30);ctx.font = '16px Arial'; ctx.fillText('Уровень: ' + currentLevel, 10, 60); ctx.fillText('Счет монет: ' + score, 150, 60);if (!allCoinsCollected) { ctx.fillStyle = '#ffb300'; ctx.font = '14px Arial'; ctx.fillText('⚠️ Соберите всё золото для открытия портала!', 10, 90); }requestAnimationFrame(gameLoop);}gameLoop();}
