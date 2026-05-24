@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>Процедурный платформер: Восстановление жизней</title>
+<title>Процедурный платформер: Скины</title>
 <style>
     * { box-sizing: border-box; }
     body {
@@ -11,31 +11,32 @@
         width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
         -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: none;
     }
-    .game-container {
-        position: relative;
-        max-width: 100%;
-        max-height: 100%;
-    }
+    .game-container { position: relative; max-width: 100%; max-height: 100%; }
     canvas { background: #222; display: block; box-shadow: 0 0 15px rgba(0,0,0,0.5); }
     
-    /* ЭКРАН GAME OVER С ТАЙМЕРОМ */
     .game-over-overlay {
-        position: absolute;
-        top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0, 0, 0, 0.85);
-        display: none; /* Включается в JS при 0 жизней */
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        color: white;
-        z-index: 5;
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.9); display: none; flex-direction: column;
+        justify-content: center; align-items: center; color: white; z-index: 5; padding: 20px;
     }
-    .game-over-overlay h1 { color: #ff3333; margin-bottom: 5px; font-size: 32px; text-shadow: 0 0 10px rgba(255,0,0,0.5); }
-    .timer-text { font-size: 24px; font-weight: bold; margin: 15px 0; color: #ffcc00; }
+    .game-over-overlay h1 { color: #ff3333; margin: 0 0 5px 0; font-size: 28px; text-shadow: 0 0 10px rgba(255,0,0,0.5); }
+    .timer-text { font-size: 20px; font-weight: bold; margin: 5px 0; color: #ffcc00; }
     .test-revive-btn {
-        background: #ffcc00; color: #111; border: none; padding: 8px 15px; 
-        font-weight: bold; border-radius: 5px; cursor: pointer; font-size: 14px;
+        background: gold; color: #111; border: none; padding: 10px 20px; 
+        font-weight: bold; border-radius: 5px; cursor: pointer; font-size: 14px; margin-bottom: 15px;
     }
+    
+    /* ИНТЕРФЕЙС МАГАЗИНА СКИНОВ */
+    .shop-title { font-size: 16px; color: #aaa; margin-bottom: 10px; font-weight: bold; letter-spacing: 1px; }
+    .skins-grid { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; max-width: 600px; }
+    .skin-card {
+        background: #2a2a2a; border: 2px solid #444; border-radius: 8px; padding: 8px;
+        display: flex; flex-direction: column; align-items: center; width: 105px; cursor: pointer;
+    }
+    .skin-card.active { border-color: lime; background: #2d3d2d; }
+    .skin-preview { width: 25px; height: 35px; margin-bottom: 5px; border-radius: 3px; }
+    .skin-name { font-size: 11px; font-weight: bold; margin-bottom: 4px; text-align: center; }
+    .skin-price { font-size: 11px; color: #ffcc00; font-weight: bold; }
 
     .mobile-ui { position: absolute; bottom: 30px; left: 0; right: 0; display: flex; justify-content: space-between; padding: 0 30px; width: 100%; pointer-events: none; z-index: 2; }
     .move-group { display: flex; gap: 20px; pointer-events: auto; }
@@ -56,13 +57,14 @@
 
 <div class="game-container" id="gameContainer">
     <canvas id="gameCanvas"></canvas>
-    
-    <!-- Всплывающий экран блокировки при смерти -->
     <div class="game-over-overlay" id="gameOverOverlay">
         <h1>ЖИЗНИ ЗАКОНЧИЛИСЬ</h1>
-        <p>Подождите восстановления или используйте тест-кнопку</p>
         <div class="timer-text" id="timerText">05:00</div>
-        <button class="test-revive-btn" id="testReviveBtn">Восстановить сейчас (Тест)</button>
+        <button class="test-revive-btn" id="testReviveBtn">Восстановить за 100 🪙</button>
+        
+        <!-- Визуальная сетка магазина -->
+        <div class="shop-title">МАГАЗИН СКИНОВ</div>
+        <div class="skins-grid" id="skinsGrid"></div>
     </div>
 </div>
 
@@ -72,6 +74,7 @@
 </div><script>
 const canvas = document.getElementById('gameCanvas'); const ctx = canvas.getContext('2d');
 const overlay = document.getElementById('gameOverOverlay'); const timerText = document.getElementById('timerText');
+const skinsGrid = document.getElementById('skinsGrid');
 
 function resizeCanvas() {
     const targetWidth = 800; const targetHeight = 500; const windowWidth = window.innerWidth; const windowHeight = window.innerHeight;
@@ -81,11 +84,24 @@ function resizeCanvas() {
 }
 window.addEventListener('resize', resizeCanvas); window.addEventListener('orientationchange', resizeCanvas);
 
+// Считывание монет, уровней и жизней из LocalStorage
 let savedLives = localStorage.getItem('p_player_lives'); let playerLives = savedLives !== null ? parseInt(savedLives) : 3;
 let savedScore = localStorage.getItem('p_player_score'); let score = savedScore !== null ? parseInt(savedScore) : 0;
 let savedLevel = localStorage.getItem('p_player_level'); let currentLevel = savedLevel !== null ? parseInt(savedLevel) : 1;
 
-const player = { x: 50, y: 350, width: 30, height: 50, color: 'lime', vy: 0, speed: 5.5, jumpStrength: 14, onGround: false, jumpCount: 0, maxJumps: 2, maxLives: 3, invulnerable: 0 };
+// НАСТРОЙКА МАГАЗИНА И ЦВЕТА ИГРОКА
+const skinsData = [
+    { id: 'lime', name: 'ЛАЙМ', color: 'lime', price: 0 },
+    { id: 'cyan', name: 'ОКЕАН', color: '#00ffff', price: 30 },
+    { id: 'gold', name: 'ЗОЛОТО', color: '#ffd700', price: 70 },
+    { id: 'purple', name: 'КИБЕР', color: '#ba00ff', price: 120 },
+    { id: 'fire', name: 'ПЛАМЯ', color: '#ff3300', price: 200 }
+];
+
+let purchasedSkins = JSON.parse(localStorage.getItem('p_purchased_skins')) || ['lime'];
+let currentSkinColor = localStorage.getItem('p_current_skin_color') || 'lime';
+
+const player = { x: 50, y: 350, width: 30, height: 50, color: currentSkinColor, vy: 0, speed: 5.5, jumpStrength: 14, onGround: false, jumpCount: 0, maxJumps: 2, maxLives: 3, invulnerable: 0 };
 player.lives = playerLives;
 const gravity = 0.7; const keys = {}; let platforms = []; let coins = []; let enemies = []; let door = { x: 0, y: 0, width: 40, height: 60, open: false }; let isGameOver = false;
 
@@ -94,7 +110,7 @@ const biomes = [
     { name: "ИЗУМРУДНЫЙ ЛЕС", bg: "#142518", plat: "#2e5c36", coin: "#00FF7F", door: "#ADFF2F" },
     { name: "НЕОНОВЫЙ КИБЕР", bg: "#120a1c", plat: "#ff0055", coin: "#00FFFF", door: "#ba00ff" }
 ];
-let currentBiome = biomes[0];
+let currentBiome = biomes;
 
 function generateNewLevel() {
     let biomeIndex = Math.floor((currentLevel - 1) / 3) % biomes.length; let oldBiome = currentBiome; currentBiome = biomes[biomeIndex];
@@ -123,31 +139,87 @@ function generateNewLevel() {
     }
     let highestPlat = platforms[platforms.length - 1]; door.x = highestPlat.x + (highestPlat.width / 2) - 20; door.y = highestPlat.y - 60; door.open = false;
 }
-function saveProgress() { localStorage.setItem('p_player_lives', player.lives); localStorage.setItem('p_player_score', score); localStorage.setItem('p_player_level', currentLevel); }const REGEN_TIME = 5 * 60 * 1000;
+function saveProgress() { localStorage.setItem('p_player_lives', player.lives); localStorage.setItem('p_player_score', score); localStorage.setItem('p_player_level', currentLevel); }// --- ЛОГИКА И ОТРИСОВКА МАГАЗИНА СКИНОВ ---
+function renderShop() {
+    skinsGrid.innerHTML = '';
+    skinsData.forEach(skin => {
+        const card = document.createElement('div');
+        card.className = 'skin-card';
+        if (player.color === skin.color) card.classList.add('active');
+
+        const isPurchased = purchasedSkins.includes(skin.id);
+
+        card.innerHTML = `
+            <div class="skin-preview" style="background: ${skin.color};"></div>
+            <div class="skin-name">${skin.name}</div>
+            <div class="skin-price">${isPurchased ? 'НАДЕТЬ' : skin.price + ' 🪙'}</div>
+        `;
+
+        card.addEventListener('click', () => {
+            if (isPurchased) {
+                // Если скин уже куплен — просто надеваем его
+                player.color = skin.color;
+                localStorage.setItem('p_current_skin_color', skin.color);
+                renderShop();
+            } else {
+                // Если скин заблокирован — пытаемся купить
+                if (score >= skin.price) {
+                    if (confirm(`Купить скин "${skin.name}" за ${skin.price} монет?`)) {
+                        score -= skin.price;
+                        purchasedSkins.push(skin.id);
+                        player.color = skin.color;
+                        
+                        localStorage.setItem('p_purchased_skins', JSON.stringify(purchasedSkins));
+                        localStorage.setItem('p_current_skin_color', skin.color);
+                        saveProgress();
+                        renderShop();
+                    }
+                } else {
+                    alert(`Не хватает монет! Нужно: ${skin.price} 🪙, у вас: ${score} 🪙`);
+                }
+            }
+        });
+        skinsGrid.appendChild(card);
+    });
+}
+
+const REGEN_TIME = 5 * 60 * 1000;
 function checkLifeRegen() {
     if (player.lives <= 0) {
         isGameOver = true; overlay.style.display = 'flex';
         let deathTime = localStorage.getItem('p_player_death_time');
         if (!deathTime) { deathTime = Date.now(); localStorage.setItem('p_player_death_time', deathTime); } else { deathTime = parseInt(deathTime); }
         let timePassed = Date.now() - deathTime; let timeLeft = REGEN_TIME - timePassed;
+        
+        const rBtn = document.getElementById('testReviveBtn');
+        if (score < 100) { rBtn.style.opacity = "0.5"; rBtn.innerText = `Нужно 100 🪙 (У вас: ${score})`; } 
+        else { rBtn.style.opacity = "1"; rBtn.innerText = "Восстановить за 100 🪙"; }
+
+        // Обновляем витрину магазина только при открытии меню
+        if (skinsGrid.children.length === 0) renderShop();
+
         if (timeLeft <= 0) {
-            player.lives = 1; isGameOver = false; overlay.style.display = 'none';
+            player.lives = 1; isGameOver = false; overlay.style.display = 'none'; skinsGrid.innerHTML = '';
             localStorage.removeItem('p_player_death_time'); saveProgress(); generateNewLevel();
         } else {
             let minutes = Math.floor(timeLeft / 60000); let seconds = Math.floor((timeLeft % 60000) / 1000);
             timerText.innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         }
-    } else { isGameOver = false; overlay.style.display = 'none'; }
+    } else { isGameOver = false; overlay.style.display = 'none'; skinsGrid.innerHTML = ''; }
 }
 
 document.getElementById('testReviveBtn').addEventListener('click', () => {
-    player.lives = 1; isGameOver = false; overlay.style.display = 'none';
-    localStorage.removeItem('p_player_death_time'); saveProgress(); generateNewLevel();
+    if (score >= 100) {
+        if (confirm(`Вы хотите потратить 100 монет для покупки жизней?\n\nВаш баланс: ${score} 🪙`)) {
+            score -= 100; player.lives = player.maxLives; isGameOver = false; overlay.style.display = 'none'; skinsGrid.innerHTML = '';
+            localStorage.removeItem('p_player_death_time'); saveProgress(); generateNewLevel();
+        }
+    } else { alert(`Недостаточно монет!\n\nНужно: 100 🪙, у вас: ${score} 🪙`); }
 });
 
 function handlePlayerDeath() {
     player.lives--; saveProgress();
-    if (player.lives <= 0) { localStorage.setItem('p_player_death_time', Date.now()); score = 0; currentLevel = 1; saveProgress(); } else { generateNewLevel(); }
+    if (player.lives <= 0) { localStorage.setItem('p_player_death_time', Date.now()); saveProgress(); } else { generateNewLevel(); }
 }
 
 resizeCanvas(); generateNewLevel(); checkLifeRegen();
