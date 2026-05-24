@@ -2,142 +2,175 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8" />
-<title>Фонк Платформер: Враги и Порталы</title>
+<title>Бесконечные миры и уровни-комнаты</title>
 <style>
+    body {
+        background: #1a1a1a;
+        margin: 0;
+        padding: 20px;
+    }
     canvas {
-        background: #0d0614; 
+        background: #222; 
         display: block;
         margin: 0 auto;
-        box-shadow: 0 0 30px rgba(138, 43, 226, 0.4);
+        box-shadow: 0 0 15px rgba(0,0,0,0.3);
     }
     .hint {
         text-align: center;
-        color: #ff0055;
-        font-family: 'Courier New', sans-serif;
+        color: #888;
+        font-family: Arial, sans-serif;
         margin-top: 15px;
+        font-size: 14px;
+    }
+    /* Стили для кнопки скачивания */
+    .download-container {
+        text-align: center;
+        margin-top: 15px;
+    }
+    .download-btn {
+        background-color: lime;
+        color: #111;
+        border: none;
+        padding: 10px 20px;
         font-size: 16px;
+        font-family: Arial, sans-serif;
         font-weight: bold;
-        text-shadow: 0 0 10px rgba(255, 0, 85, 0.5);
+        cursor: pointer;
+        border-radius: 5px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        transition: all 0.2s ease;
+    }
+    .download-btn:hover {
+        background-color: #00cc00;
+        transform: translateY(-2px);
+    }
+    .download-btn:active {
+        transform: translateY(0);
     }
 </style>
 </head>
 <body>
-<canvas id="gameCanvas" width="800" height="600"></canvas>
-<div id="musicHint" class="hint">КЛИКНИ ПО ЭКРАНУ, ЧТОБЫ ВКЛЮЧИТЬ НАСТОЯЩИЙ ФОНК! 🎧</div>
+
+<canvas id="gameCanvas" width="800" height="500"></canvas>
+<div class="hint">Управление: Стрелки / WASD | Прыжок: Пробел / W (доступен двойной прыжок)</div>
+
+<!-- Контейнер с кнопкой -->
+<div class="download-container">
+    <button class="download-btn" id="downloadBtn">Скачать игру (.html)</button>
+</div>
 
 <script>
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-// Игрок
+// Игрок (классический лаймовый кубик)
 const player = { 
     x: 50, 
-    y: 500, 
+    y: 400, 
     width: 30, 
-    height: 45, 
-    color: '#00ffff', // Яркий бирюзовый неон
+    height: 50, 
+    color: 'lime', 
     vy: 0, 
     speed: 5, 
-    jumpStrength: 13, 
+    jumpStrength: 14, 
     onGround: false,
     jumpCount: 0,     
     maxJumps: 2       
 };
 
-const gravity = 0.6;
+const gravity = 0.7;
 const keys = {};
 
-// Настройки миров и уровней
-let currentWorldIndex = 0;
-let score = 0;
-
-const worlds = [
-    { name: "КИБЕРПУСТОШЬ", bg: "#0d0614", plat: "#ff0055" },
-    { name: "КИСЛОТНЫЙ ДРИФТ", bg: "#05120a", plat: "#00ff66" },
-    { name: "АДСКИЙ КОВБЕЛЛ", bg: "#140505", plat: "#ff3300" },
-    { name: "ФОНК КОСМОС", bg: "#020205", plat: "#ba00ff" }
-];
-
-// Игровые объекты (заполняются при старте уровня)
+// Игровые объекты
 let platforms = [];
 let coins = [];
-let enemies = [];
-let door = { x: 720, y: 100, width: 40, height: 60, open: false };
+let door = { x: 720, y: 80, width: 40, height: 60, open: false };
 
-// --- МУЗЫКА И ЗВУКИ ---
-const bgMusic = new Audio('https://r2.dev');
-bgMusic.loop = true;
-bgMusic.volume = 0.4;
-let audioStarted = false;
+// Переменные прогресса
+let currentLevel = 1;
+let score = 0;
 
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-function playSound(freq1, freq2, duration) {
-    if (!audioStarted) return;
-    const time = audioCtx.currentTime;
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(freq1, time);
-    if (freq2) osc.frequency.setValueAtTime(freq2, time + duration/2);
-    gain.gain.setValueAtTime(0.08, time);
-    gain.exponentialRampToValueAtTime(0.001, time + duration);
-    osc.connect(gain); gain.connect(audioCtx.destination);
-    osc.start(time); osc.stop(time + duration);
-}
+// Конфигурация бесконечных миров (биомов)
+const biomes = [
+    { name: "КЛАССИЧЕСКИЙ МИР", bg: "#222222", plat: "#8B4513", coin: "gold", door: "#4aeade" },
+    { name: "ИЗУМРУДНЫЙ ЛЕС", bg: "#142518", plat: "#2e5c36", coin: "#00FF7F", door: "#ADFF2F" },
+    { name: "НЕОНОВЫЙ КИБЕР", bg: "#120a1c", plat: "#ff0055", coin: "#00FFFF", door: "#ba00ff" },
+    { name: "ПУСТЫНЯ СМЕРТИ", bg: "#2c2417", plat: "#d2b48c", coin: "#FF4500", door: "#FFD700" },
+    { name: "ЛЕДЯНЫЕ ПЕЩЕРЫ", bg: "#15222e", plat: "#4682B4", coin: "#E0FFFF", door: "#00FFFF" },
+    { name: "БЕСКОНЕЧНЫЙ КОСМОС", bg: "#05050a", plat: "#4B0082", coin: "#FFFFFF", door: "#FF00FF" }
+];
 
-window.addEventListener('click', () => {
-    if (!audioStarted) {
-        audioCtx.resume();
-        bgMusic.play().catch(e => console.log(e));
-        audioStarted = true;
-        document.getElementById('musicHint').innerHTML = `МИР: ${worlds[currentWorldIndex].name} 🏎️🔥`;
-    }
-});
+let currentBiome = biomes[0];
 
-// --- ИНИЦИАЛИЗАЦИЯ УРОВНЯ ---
-function initLevel() {
-    const w = worlds[currentWorldIndex];
-    document.getElementById('musicHint').innerHTML = `МИР: ${w.name} 🏎️🔥`;
-    
-    // Сброс игрока
+// Функция генерации нового случайного уровня
+function generateNewLevel() {
+    let biomeIndex = Math.floor((currentLevel - 1) / 3) % biomes.length;
+    currentBiome = biomes[biomeIndex];
+
     player.x = 50;
-    player.y = 500;
+    player.y = 350;
     player.vy = 0;
     player.jumpCount = 0;
 
-    // Платформы (фиксированная архитектура для прохождения)
     platforms = [
-        { x: 0, y: 560, width: 800, height: 40, color: w.plat }, // Пол
-        { x: 150, y: 450, width: 150, height: 15, color: w.plat },
-        { x: 400, y: 360, width: 150, height: 15, color: w.plat },
-        { x: 100, y: 260, width: 180, height: 15, color: w.plat },
-        { x: 450, y: 180, width: 300, height: 15, color: w.plat } // Платформа с дверью
+        { x: 0, y: 450, width: 800, height: 50, color: currentBiome.plat }
     ];
 
-    // Монеты
-    coins = [
-        { x: 220, y: 410, size: 10, collected: false },
-        { x: 470, y: 320, size: 10, collected: false },
-        { x: 180, y: 220, size: 10, collected: false },
-        { x: 520, y: 140, size: 10, collected: false }
-    ];
+    coins = [];
 
-    // Враги (красные кубы, которые ходят по платформам)
-    // rangeX - левая и правая границы патрулирования
-    enemies = [
-        { x: 200, y: 420, width: 25, height: 30, speed: 2, rangeMin: 150, rangeMax: 275 },
-        { x: 420, y: 330, width: 25, height: 30, speed: -2, rangeMin: 400, rangeMax: 525 },
-        { x: 580, y: 150, width: 25, height: 30, speed: 3, rangeMin: 460, rangeMax: 720 }
-    ];
+    let numPlatforms = Math.floor(Math.random() * 3) + 3; 
+    
+    for (let i = 0; i < numPlatforms; i++) {
+        let platWidth = Math.random() * 50 + 110; 
+        let platX = 120 + i * 140 + (Math.random() * 40 - 20);
+        let platY = 370 - i * 75 - (Math.random() * 30);
 
-    // Дверь в следующий мир
-    door.x = 700;
-    door.y = 120;
+        if (platX + platWidth > canvas.width) platX = canvas.width - platWidth - 20;
+
+        platforms.push({
+            x: platX,
+            y: platY,
+            width: platWidth,
+            height: 20,
+            color: currentBiome.plat
+        });
+
+        coins.push({
+            x: platX + platWidth / 2 - 5,
+            y: platY - 25,
+            size: 10,
+            collected: false
+        });
+    }
+
+    let lastPlat = platforms[platforms.length - 1];
+    door.x = lastPlat.x + lastPlat.width / 2 - 20;
+    door.y = lastPlat.y - 60;
     door.open = false;
 }
 
-// Запуск первого уровня
-initLevel();
+generateNewLevel();
+
+// Логика скачивания текущей страницы
+document.getElementById('downloadBtn').addEventListener('click', () => {
+    // Получаем весь HTML код текущей страницы
+    const htmlCode = document.documentElement.outerHTML;
+    
+    // Создаем файл в памяти браузера
+    const blob = new Blob([htmlCode], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    
+    // Скачиваем файл
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'my-platformer.html'; // Имя скачиваемого файла
+    document.body.appendChild(a);
+    a.click();
+    
+    // Очищаем память
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+});
 
 // Управление
 document.addEventListener('keydown', (e) => { 
@@ -146,12 +179,14 @@ document.addEventListener('keydown', (e) => {
             player.vy = -player.jumpStrength;
             player.jumpCount++;
             player.onGround = false;
-            playSound(400, 600, 0.1); // Звук прыжка
         }
     }
     keys[e.key] = true; 
 });
-document.addEventListener('keyup', (e) => { keys[e.key] = false; });
+
+document.addEventListener('keyup', (e) => { 
+    keys[e.key] = false; 
+});
 
 function checkCollision(rect1, rect2) {
     return rect1.x < rect2.x + rect2.width && 
@@ -161,9 +196,6 @@ function checkCollision(rect1, rect2) {
 }
 
 function gameLoop() {
-    const w = worlds[currentWorldIndex];
-
-    // 1. Движение игрока
     if (keys['ArrowLeft'] || keys['a']) player.x -= player.speed;
     if (keys['ArrowRight'] || keys['d']) player.x += player.speed;
 
@@ -174,125 +206,92 @@ function gameLoop() {
     player.y += player.vy;
     player.onGround = false;
 
-    // Столкновение игрока с платформами
     for (const plat of platforms) {
-        if (checkCollision(player, plat) && player.vy > 0 && player.y + player.height - player.vy <= plat.y + 4) {
-            player.y = plat.y - player.height;
-            player.vy = 0;
-            player.onGround = true;
-            player.jumpCount = 0;
-        }
-    }
-
-    // 2. Логика врагов
-    for (const enemy of enemies) {
-        enemy.x += enemy.speed;
-        // Разворот врага на границах его платформы
-        if (enemy.x <= enemy.rangeMin || enemy.x + enemy.width >= enemy.rangeMax) {
-            enemy.speed = -enemy.speed;
-        }
-
-        // Столкновение игрока с врагом (смерть)
-        if (checkCollision(player, enemy)) {
-            playSound(150, 80, 0.4); // Звук проигрыша
-            initLevel(); // Перезапуск текущего уровня
-        }
-    }
-
-    // 3. Сбор монет
-    let allCoinsCollected = true;
-    for (const coin of coins) {
-        if (!coin.collected) {
-            allCoinsCollected = false;
-            if (player.x < coin.x + coin.size && player.x + player.width > coin.x && player.y < coin.y + coin.size && player.y + player.height > coin.y) {
-                coin.collected = true;
-                score += 50;
-                playSound(880, 1320, 0.15); // Звук монеты
+        if (checkCollision(player, plat)) {
+            if (player.vy >= 0 && player.y + player.height - player.vy <= plat.y + 5) {
+                player.y = plat.y - player.height;
+                player.vy = 0;
+                player.onGround = true;
+                player.jumpCount = 0; 
             }
         }
     }
 
-    // Если все монеты собраны — дверь открывается
-    if (allCoinsCollected && !door.open) {
-        door.open = true;
-        playSound(600, 900, 0.3); // Звук открытия двери
+    if (player.y + player.height > canvas.height) {
+        player.y = canvas.height - player.height;
+        player.vy = 0;
+        player.onGround = true;
+        player.jumpCount = 0;
     }
 
-    // 4. Вход в дверь (Переход в другой мир)
-    if (door.open && checkCollision(player, door)) {
-        currentWorldIndex++;
-        if (currentWorldIndex >= worlds.length) {
-            alert("ПОЗДРАВЛЯЕМ! Вы прошли все миры под чистокровный фонк! Итоговый счет: " + score);
-            currentWorldIndex = 0;
-            score = 0;
+    let allCollected = true;
+    for (const coin of coins) {
+        if (!coin.collected) {
+            allCollected = false; 
+            if (player.x < coin.x + coin.size && player.x + player.width > coin.x && player.y < coin.y + coin.size && player.y + player.height > coin.y) {
+                coin.collected = true;
+                score++;
+            }
         }
-        initLevel();
     }
 
-    // Падение в яму (на всякий случай)
-    if (player.y > canvas.height) {
-        initLevel();
+    if (allCollected) {
+        door.open = true;
     }
 
-    // 5. ОТРИСОВКА
-    ctx.fillStyle = w.bg;
+    if (door.open && checkCollision(player, door)) {
+        currentLevel++;
+        generateNewLevel();
+    }
+
+    ctx.fillStyle = currentBiome.bg;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Рисуем платформы
     for (const plat of platforms) {
         ctx.fillStyle = plat.color;
         ctx.fillRect(plat.x, plat.y, plat.width, plat.height);
-        // Неоновое свечение краев платформы
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(plat.x, plat.y, plat.width, 2);
+        
+        ctx.fillStyle = 'rgba(255,255,255,0.15)';
+        ctx.fillRect(plat.x, plat.y, plat.width, 3);
     }
 
-    // Рисуем монеты
     for (const coin of coins) {
         if (!coin.collected) {
-            ctx.fillStyle = '#fff700'; 
+            ctx.fillStyle = currentBiome.coin;
             ctx.beginPath();
             ctx.arc(coin.x + coin.size / 2, coin.y + coin.size / 2, coin.size, 0, Math.PI * 2);
             ctx.fill();
         }
     }
 
-    // Рисуем врагов (агрессивные красные кубы)
-    for (const enemy of enemies) {
-        ctx.fillStyle = '#ff0000';
-        ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
-        // Глаза врага для стиля
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(enemy.x + (enemy.speed > 0 ? 15 : 5), enemy.y + 8, 5, 5);
-    }
-
-    // Рисуем дверь
-    ctx.fillStyle = door.open ? '#00ff66' : '#555555'; // Зеленая, если открыта
+    ctx.fillStyle = door.open ? currentBiome.door : '#555'; 
     ctx.fillRect(door.x, door.y, door.width, door.height);
-    // Дверная ручка
-    ctx.fillStyle = '#ffd700';
+    
+    ctx.fillStyle = 'gold';
     ctx.beginPath();
-    ctx.arc(door.x + (door.open ? 8 : 32), door.y + 30, 4, 0, Math.PI * 2);
+    ctx.arc(door.x + (door.open ? 8 : 32), door.y + 30, 3, 0, Math.PI * 2);
     ctx.fill();
 
-    // Рисуем игрока
     ctx.fillStyle = player.color;
     ctx.fillRect(player.x, player.y, player.width, player.height);
 
-    // Интерфейс
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 20px Courier New';
-    ctx.fillText('SCORE: ' + score, 20, 40);
-    ctx.fillText('WORLD: ' + (currentWorldIndex + 1) + '/' + worlds.length, 630, 40);
+    ctx.fillStyle = 'white';
+    ctx.font = '20px Arial';
+    ctx.fillText('Монет: ' + score, 15, 35);
+    ctx.fillText('Уровень: ' + currentLevel, 670, 35);
+
+    ctx.fillStyle = currentBiome.door;
+    ctx.font = 'bold 16px Arial';
+    ctx.fillText('МИР: ' + currentBiome.name, 15, 65);
 
     if (!door.open) {
-        ctx.fillStyle = '#ff0055';
-        ctx.font = '14px Courier New';
-        ctx.fillText('СОБЕРИ ВСЕ МОНЕТЫ, ЧТОБЫ ОТКРЫТЬ ПОРТАЛ!', 240, 40);
+        ctx.fillStyle = '#ffb3b3';
+        ctx.font = '14px Arial';
+        ctx.fillText('Соберите монеты, чтобы открыть проход', 300, 35);
     } else {
-        ctx.fillStyle = '#00ff66';
-        ctx.font = 'bold 14px Courier New';
-        ctx.fillText('ПОРТАЛ ОТКРЫТ! БЕГИ К ДВЕРИ!', 290, 40);
+        ctx.fillStyle = '#b3ffb3';
+        ctx.font = 'bold 14px Arial';
+        ctx.fillText('Портал в следующий мир открыт!', 300, 35);
     }
 
     requestAnimationFrame(gameLoop);
