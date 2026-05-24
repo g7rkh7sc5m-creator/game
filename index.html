@@ -2,13 +2,14 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8" />
-<title>Бесконечный Фонк Платформер</title>
+<title>Бесконечный Фонк Платформер с Мирами</title>
 <style>
     canvas {
-        background: #0d0614; /* Темно-фиолетовый фон в стиле фонк-артов */
+        background: #0d0614; /* Начальный цвет фона */
         display: block;
         margin: 0 auto;
         box-shadow: 0 0 30px rgba(138, 43, 226, 0.4);
+        transition: background 1s ease; /* Плавное переключение цвета миров */
     }
     .hint {
         text-align: center;
@@ -32,10 +33,10 @@ const player = {
     y: 500, 
     width: 30, 
     height: 45, 
-    color: '#ff0055', // Агрессивный розовый цвет неона
+    color: '#ff0055', 
     vy: 0, 
     speed: 6, 
-    jumpStrength: 14, 
+    jumpStrength: 14, // Поставьте 30, чтобы взлететь как ракета и проверить все миры!
     onGround: false,
     jumpCount: 0,     
     maxJumps: 2       
@@ -51,116 +52,85 @@ let platforms = [];
 let coins = [];
 let nextPlatformY = 450; 
 
+// Текущий цвет заднего фона (меняется с мирами)
+let currentBgColor = '#0d0614'; 
+
 // --- ЗВУКОВОЙ ДВИЖОК PHONK ---
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 let audioStarted = false;
 
-// Мелодия ковбелла (частоты в Гц)
 const cowbellMelody = [
     587.33, 587.33, 0, 659.25, 
     783.99, 783.99, 740.00, 0,
     587.33, 587.33, 0, 880.00, 
     783.99, 0, 659.25, 0
 ];
-// Тяжелый 808 бас
 const bassMelody = [73.42, 73.42, 73.42, 82.41, 98.00, 98.00, 92.50, 92.50];
-
 let step = 0;
 
 function playPhonkStep() {
     if (!audioStarted) return;
-
     const time = audioCtx.currentTime;
 
-    // 1. СИНТЕЗ КОВБЕЛЛА (Фирменный высокий звук фонка)
     let freq = cowbellMelody[step % cowbellMelody.length];
     if (freq > 0) {
         let osc1 = audioCtx.createOscillator();
         let osc2 = audioCtx.createOscillator();
         let cowbellGain = audioCtx.createGain();
-
-        osc1.type = 'square';
-        osc1.frequency.setValueAtTime(freq, time);
-        // Небольшая расстройка для металлического звука
-        osc2.type = 'square';
-        osc2.frequency.setValueAtTime(freq * 1.49, time); 
-
+        osc1.type = 'square'; osc1.frequency.setValueAtTime(freq, time);
+        osc2.type = 'square'; osc2.frequency.setValueAtTime(freq * 1.49, time); 
         cowbellGain.gain.setValueAtTime(0.06, time);
         cowbellGain.gain.exponentialRampToValueAtTime(0.001, time + 0.15);
-
-        osc1.connect(cowbellGain);
-        osc2.connect(cowbellGain);
+        osc1.connect(cowbellGain); osc2.connect(cowbellGain);
         cowbellGain.connect(audioCtx.destination);
-
-        osc1.start(time);
-        osc2.start(time);
-        osc1.stop(time + 0.15);
-        osc2.stop(time + 0.15);
+        osc1.start(time); osc2.start(time);
+        osc1.stop(time + 0.15); osc2.stop(time + 0.15);
     }
 
-    // 2. СИНТЕЗ ТЯЖЕЛОГО 808 БАСА (Каждые 2 шага)
     if (step % 2 === 0) {
         let bassOsc = audioCtx.createOscillator();
         let bassGain = audioCtx.createGain();
         let bassFreq = bassMelody[Math.floor(step / 2) % bassMelody.length];
-
-        bassOsc.type = 'triangle'; // Мягкая волна для глубокого баса
+        bassOsc.type = 'triangle';
         bassOsc.frequency.setValueAtTime(bassFreq, time);
-        // Эффект скольжения (pitch glide), типичный для фонка
         bassOsc.frequency.exponentialRampToValueAtTime(bassFreq * 0.7, time + 0.25);
-
         bassGain.gain.setValueAtTime(0.3, time);
         bassGain.gain.linearRampToValueAtTime(0.001, time + 0.25);
-
         bassOsc.connect(bassGain);
         bassGain.connect(audioCtx.destination);
-
-        bassOsc.start(time);
-        bassOsc.stop(time + 0.25);
+        bassOsc.start(time); bassOsc.stop(time + 0.25);
     }
 
-    // 3. КЛЭП / ХЭТ (Шум на заднем фоне для ритма)
     if (step % 4 === 2) {
         let noiseBuffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.05, audioCtx.sampleRate);
         let output = noiseBuffer.getChannelData(0);
-        for (let i = 0; i < noiseBuffer.length; i++) {
-            output[i] = Math.random() * 2 - 1;
-        }
-        let noiseNode = audioCtx.createBufferSource();
-        noiseNode.buffer = noiseBuffer;
+        for (let i = 0; i < noiseBuffer.length; i++) output[i] = Math.random() * 2 - 1;
+        let noiseNode = audioCtx.createBufferSource(); noiseNode.buffer = noiseBuffer;
         let noiseGain = audioCtx.createGain();
         noiseGain.gain.setValueAtTime(0.03, time);
         noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
-        noiseNode.connect(noiseGain);
-        noiseGain.connect(audioCtx.destination);
+        noiseNode.connect(noiseGain); noiseGain.connect(audioCtx.destination);
         noiseNode.start(time);
     }
 
     step++;
-    setTimeout(playPhonkStep, 150); // Скорость ~150 BPM
+    setTimeout(playPhonkStep, 150);
 }
 
-// Звуковой эффект при подборе монеты
 function playCoinSound() {
     if (!audioStarted) return;
     const time = audioCtx.currentTime;
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
-    
     osc.type = 'sine';
     osc.frequency.setValueAtTime(880, time);
-    osc.frequency.setValueAtTime(1320, time + 0.08); // Быстрый арпеджио вверх
-    
+    osc.frequency.setValueAtTime(1320, time + 0.08);
     gain.gain.setValueAtTime(0.1, time);
     gain.gain.exponentialRampToValueAtTime(0.001, time + 0.2);
-    
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start(time);
-    osc.stop(time + 0.2);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(time); osc.stop(time + 0.2);
 }
 
-// Активация музыки по клику
 window.addEventListener('click', () => {
     if (!audioStarted) {
         audioCtx.resume();
@@ -169,15 +139,35 @@ window.addEventListener('click', () => {
     }
 });
 
-// --- ЛОГИКА ИГРЫ ---
+// --- ГЕНЕРАЦИЯ БЕСКОНЕЧНЫХ МИРОВ ---
 function generatePlatforms() {
     while (nextPlatformY > camera.y - 1000) {
         let width = Math.random() * 60 + 80;
         let x = Math.random() * (canvas.width - width);
-        // Неоновые цвета фиолетово-розовой гаммы
-        let color = `hsl(${280 + Math.random() * 40}, 80%, 50%)`; 
+        
+        // Миры меняются каждые 2500 пикселей высоты
+        let currentWorld = Math.floor(Math.abs(nextPlatformY) / 2500);
+        let platformColor = '#ff0055';
 
-        platforms.push({ x: x, y: nextPlatformY, width: width, height: 15, color: color });
+        if (currentWorld === 0) {
+            // МИР 1: Киберпустошь (Фиолетовый фон, розовый неон)
+            currentBgColor = '#0d0614';
+            platformColor = `hsl(${280 + Math.random() * 30}, 80%, 50%)`;
+        } else if (currentWorld === 1) {
+            // МИР 2: Кислотный дрифт (Тёмно-зеленый фон, ядовитые платформы)
+            currentBgColor = '#05120a';
+            platformColor = `hsl(${100 + Math.random() * 30}, 90%, 45%)`;
+        } else if (currentWorld === 2) {
+            // МИР 3: Адский ковбелл (Тёмно-красный фон, огненные платформы)
+            currentBgColor = '#140505';
+            platformColor = `hsl(${0 + Math.random() * 20}, 95%, 50%)`;
+        } else {
+            // МИР 4: Финал в космосе (Черный космос, платформы бешено переливаются)
+            currentBgColor = '#020205';
+            platformColor = `hsl(${Math.abs(nextPlatformY / 4) % 360}, 90%, 50%)`;
+        }
+
+        platforms.push({ x: x, y: nextPlatformY, width: width, height: 15, color: platformColor });
 
         if (Math.random() < 0.4) {
             coins.push({
@@ -218,6 +208,7 @@ function checkCollision(rect1, rect2) {
 function resetGame() {
     player.x = 400; player.y = 500; player.vy = 0; player.jumpCount = 0;
     camera.y = 0; score = 0; highestY = 500; nextPlatformY = 450;
+    currentBgColor = '#0d0614';
     platforms = [{ x: 0, y: 580, width: 800, height: 20, color: '#25123e' }];
     coins = [];
     generatePlatforms();
@@ -254,7 +245,7 @@ function gameLoop() {
         if (!coin.collected && player.x < coin.x + coin.size && player.x + player.width > coin.x && player.y < coin.y + coin.size && player.y + player.height > coin.y) {
             coin.collected = true;
             score += 10;
-            playCoinSound(); // Включаем звук монетки
+            playCoinSound();
         }
     }
 
@@ -264,7 +255,10 @@ function gameLoop() {
         return requestAnimationFrame(gameLoop);
     }
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Отрисовка динамического фона мира
+    ctx.fillStyle = currentBgColor;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
     ctx.save();
     ctx.translate(0, -camera.y);
 
@@ -275,7 +269,7 @@ function gameLoop() {
 
     for (const coin of coins) {
         if (!coin.collected) {
-            ctx.fillStyle = '#00ffff'; // Неоновые голубые монеты
+            ctx.fillStyle = '#00ffff'; 
             ctx.beginPath();
             ctx.arc(coin.x + coin.size / 2, coin.y + coin.size / 2, coin.size, 0, Math.PI * 2);
             ctx.fill();
@@ -288,7 +282,7 @@ function gameLoop() {
 
     let totalScore = score + Math.floor(Math.abs(highestY - 500) / 10);
     ctx.fillStyle = '#fff';
-    ctx.font = 'black 22px Courier New'; // Стильный моноширинный шрифт
+    ctx.font = 'black 22px Courier New';
     ctx.fillText('SCORE: ' + totalScore, 20, 40);
 
     requestAnimationFrame(gameLoop);
