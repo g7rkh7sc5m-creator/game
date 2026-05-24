@@ -2,38 +2,83 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Platformer Game - Двойной Прыжок</title>
+    <title>Platformer Game - Приложение</title>
+    <!-- Теги для мобильных устройств и PWA приложения -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="manifest" href="manifest.json">
     <style>
         body {
             background-color: #111;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             height: 100vh;
             margin: 0;
             font-family: Arial, sans-serif;
+            overflow: hidden;
         }
         canvas {
             display: block;
             border: 3px solid #555;
             box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            max-width: 100%;
+            max-height: 85vh;
+        }
+        #installBtn {
+            display: none;
+            margin-bottom: 10px;
+            padding: 8px 16px;
+            background: lime;
+            color: black;
+            border: none;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
 
+<!-- Кнопка установки приложения -->
+<button id="installBtn">📥 Установить как приложение</button>
+
 <canvas id="gameCanvas" width="800" height="500"></canvas>
 
 <script>
+// СКРИПТ ПРИЛОЖЕНИЯ (PWA)
+let deferredPrompt;
+const installBtn = document.getElementById('installBtn');
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    installBtn.style.display = 'block';
+});
+installBtn.addEventListener('click', async () => {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+            installBtn.style.display = 'none';
+        }
+        deferredPrompt = null;
+    }
+});
+
+// РЕГИСТРАЦИЯ СЕРВИС-ВОРКЕРА ДЛЯ СКАЧИВАНИЯ ИГРЫ НА ПК
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
 window.onload = function() {
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
-    // Базовые настройки игрока
     const player = {
         x: 50, y: 0, width: 30, height: 50, color: 'lime',
-        vy: 0, speed: 5, jumpStrength: 15, onGround: false,
-        jumpCount: 0 // Счетчик прыжков для двойного прыжка
+        vy: 0, speed: 5, jumpStrength: 15, onGround: false, jumpCount: 0
     };
 
     let baseGravity = 0.8;
@@ -41,11 +86,8 @@ window.onload = function() {
     const keys = {};
     let score = 0;
     let currentLevel = 1;
-
-    // Эффект двойного прыжка (кольцо воздуха)
     let jumpEffect = { x: 0, y: 0, radius: 0, active: false };
 
-    // НАСТРОЙКИ МИРОВ
     const worlds = [
         { name: "🌲 Лесной Мир", bg: "#1a2f1a", platColor: "#4a7c59", gravity: 0.8, speedBonus: 0, jumpBonus: 0 },
         { name: "🏜️ Пустынный Мир", bg: "#3d311d", platColor: "#d4a373", gravity: 0.8, speedBonus: 2, jumpBonus: 0 },
@@ -59,71 +101,47 @@ window.onload = function() {
     let enemies = [];
     let door = { x: 720, y: 0, width: 40, height: 60, color: 'royalblue' };
 
-    function rand(min, max) {
-        return Math.floor(Math.random() * (max - min + 1)) + min;
-    }
+    function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 
     function updateWorldSettings() {
         let worldIndex = Math.floor((currentLevel - 1) / 5) % worlds.length;
         currentWorld = worlds[worldIndex];
-        
         gravity = currentWorld.gravity;
         player.speed = 5 + currentWorld.speedBonus;
         player.jumpStrength = 15 + currentWorld.jumpBonus;
     }
 
-    // ГЕНЕРАТОР УРОВНЯ
     function generateLevel(levelNumber) {
         updateWorldSettings();
+        player.x = 50; player.y = 300; player.vy = 0; player.jumpCount = 0;
+        platforms = []; coins = []; enemies = []; jumpEffect.active = false;
 
-        player.x = 50;
-        player.y = 300;
-        player.vy = 0;
-        player.jumpCount = 0; // Сброс прыжков
-
-        platforms = [];
-        coins = [];
-        enemies = [];
-        jumpEffect.active = false;
-
-        // Пол
         platforms.push({x: 0, y: 450, width: 800, height: 50, color: currentWorld.platColor});
-
-        // Случайные платформы
         const platformCount = rand(3, 5);
         let currentX = 150;
 
         for (let i = 0; i < platformCount; i++) {
             let platW = rand(100, 160);
-            let platH = 20;
             let platY = (currentWorld.name.includes("Космос")) ? rand(100, 280) : rand(180, 360);
-
-            platforms.push({
-                x: currentX, y: platY, width: platW, height: platH, color: currentWorld.platColor
-            });
-
+            platforms.push({ x: currentX, y: platY, width: platW, height: 20, color: currentWorld.platColor });
             currentX += platW + rand(50, 80); 
         }
 
-        // Дверь портала
         door.x = rand(650, 740);
         let lastPlatY = rand(160, 250);
         platforms.push({ x: door.x - 20, y: lastPlatY + 60, width: 100, height: 20, color: currentWorld.platColor });
         door.y = lastPlatY;
 
-        // Золото
         for (let i = 1; i < platforms.length; i++) {
             let p = platforms[i];
             coins.push({ x: p.x + (p.width / 2), y: p.y - 30, size: 10, collected: false });
         }
 
-        // Враги
         const maxEnemiesOnLevel = Math.min(3, Math.floor(levelNumber / 2) + 1); 
         const enemySpeed = 1.5 + (levelNumber * 0.2); 
 
         for (let i = 1; i < platforms.length - 1; i++) {
             if (enemies.length >= maxEnemiesOnLevel) break;
-            
             let p = platforms[i];
             if (p.width > 80) {
                 enemies.push({
@@ -134,18 +152,13 @@ window.onload = function() {
         }
     }
 
-    // Управление кнопками
     document.addEventListener('keydown', (e) => { 
-        // Предотвращаем повторное срабатывание прыжка при удержании клавиши
         if (!keys[e.key]) {
             if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W' || e.key === 'ц' || e.key === 'Ц') {
-                // Если на земле или у нас остался второй прыжок
                 if (player.onGround || player.jumpCount < 2) {
                     player.vy = -player.jumpStrength;
                     player.onGround = false;
                     player.jumpCount++;
-
-                    // Если это второй прыжок, активируем визуальный эффект эффекта взрыва воздуха под ногами
                     if (player.jumpCount === 2) {
                         jumpEffect.x = player.x + player.width / 2;
                         jumpEffect.y = player.y + player.height;
@@ -157,36 +170,27 @@ window.onload = function() {
         }
         keys[e.key] = true; 
     });
-    
     document.addEventListener('keyup', (e) => { keys[e.key] = false; });
 
     function checkCollision(rect1, rect2) {
-        return rect1.x < rect2.x + rect2.width &&
-               rect1.x + rect1.width > rect2.x &&
-               rect1.y < rect2.y + rect2.height &&
-               rect1.y + rect1.height > rect2.y;
+        return rect1.x < rect2.x + rect2.width && rect1.x + rect1.width > rect2.x &&
+               rect1.y < rect2.y + rect2.height && rect1.y + rect1.height > rect2.y;
     }
 
     generateLevel(currentLevel);
 
     function gameLoop() {
         canvas.style.background = currentWorld.bg;
-
         if (keys['ArrowLeft'] || keys['a'] || keys['A'] || keys['ф'] || keys['Ф']) player.x -= player.speed;
         if (keys['ArrowRight'] || keys['d'] || keys['D'] || keys['в'] || keys['В']) player.x += player.speed;
         
-        player.vy += gravity;
-        player.y += player.vy;
-        
+        player.vy += gravity; player.y += player.vy;
         let onGroundNext = false;
 
         for (const plat of platforms) {
             if (checkCollision(player, plat)) {
                 if (player.vy >= 0 && player.y + player.height - player.vy <= plat.y + 5) {
-                    player.y = plat.y - player.height;
-                    player.vy = 0;
-                    onGroundNext = true;
-                    player.jumpCount = 0; // Сбрасываем счетчик прыжков при приземлении!
+                    player.y = plat.y - player.height; player.vy = 0; onGroundNext = true; player.jumpCount = 0;
                 }
             }
         }
@@ -194,104 +198,45 @@ window.onload = function() {
 
         if (player.x < 0) player.x = 0;
         if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
-        if (player.y + player.height > canvas.height) {
-            generateLevel(currentLevel); // Упал в пропасть
-        }
+        if (player.y + player.height > canvas.height) generateLevel(currentLevel);
 
-        // Враги
         for (const enemy of enemies) {
             enemy.x += enemy.speed;
-            if (enemy.x <= enemy.minX || enemy.x + enemy.width >= enemy.maxX) {
-                enemy.speed = -enemy.speed;
-            }
-            if (checkCollision(player, enemy)) {
-                generateLevel(currentLevel); // Умер от врага
-            }
+            if (enemy.x <= enemy.minX || enemy.x + enemy.width >= enemy.maxX) enemy.speed = -enemy.speed;
+            if (checkCollision(player, enemy)) generateLevel(currentLevel);
         }
 
-        // Монеты
         for (const coin of coins) {
-            if (!coin.collected &&
-                player.x < coin.x + coin.size && player.x + player.width > coin.x && 
-                player.y < coin.y + coin.size && player.y + player.height > coin.y) {
-                coin.collected = true;
-                score++;
+            if (!coin.collected && checkCollision(player, {x: coin.x, y: coin.y, width: coin.size, height: coin.size})) {
+                coin.collected = true; score++;
             }
         }
 
         const allCoinsCollected = coins.every(coin => coin.collected);
-
-        // Дверь
         if (allCoinsCollected && checkCollision(player, door)) {
-            currentLevel++;
-            generateLevel(currentLevel);
+            currentLevel++; generateLevel(currentLevel);
         }
 
-        // ОТРИСОВКА
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        // Платформы
-        for (const plat of platforms) {
-            ctx.fillStyle = plat.color;
-            ctx.fillRect(plat.x, plat.y, plat.width, plat.height);
-        }
-
-        // Дверь
-        ctx.fillStyle = door.color;
-        ctx.globalAlpha = allCoinsCollected ? 1.0 : 0.3;
-        ctx.fillRect(door.x, door.y, door.width, door.height);
-        ctx.globalAlpha = 1.0;
-
-        // Монеты
-        for (const coin of coins) {
-            if (!coin.collected) {
-                ctx.fillStyle = 'gold';
-                ctx.beginPath();
-                ctx.arc(coin.x, coin.y, coin.size, 0, Math.PI * 2);
-                ctx.fill();
-            }
-        }
-
-        // Анимация эффекта двойного прыжка
+        for (const plat of platforms) { ctx.fillStyle = plat.color; ctx.fillRect(plat.x, plat.y, plat.width, plat.height); }
+        ctx.fillStyle = door.color; ctx.globalAlpha = allCoinsCollected ? 1.0 : 0.3; ctx.fillRect(door.x, door.y, door.width, door.height); ctx.globalAlpha = 1.0;
+        for (const coin of coins) { if (!coin.collected) { ctx.fillStyle = 'gold'; ctx.beginPath(); ctx.arc(coin.x, coin.y, coin.size, 0, Math.PI * 2); ctx.fill(); } }
         if (jumpEffect.active) {
             ctx.strokeStyle = 'rgba(255, 255, 255, ' + (1 - jumpEffect.radius / 30) + ')';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(jumpEffect.x, jumpEffect.y, jumpEffect.radius, 0, Math.PI * 2);
-            ctx.stroke();
-            jumpEffect.radius += 2;
-            if (jumpEffect.radius > 30) jumpEffect.active = false;
+            ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(jumpEffect.x, jumpEffect.y, jumpEffect.radius, 0, Math.PI * 2); ctx.stroke();
+            jumpEffect.radius += 2; if (jumpEffect.radius > 30) jumpEffect.active = false;
         }
+        for (const enemy of enemies) { ctx.fillStyle = enemy.color; ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height); }
+        ctx.fillStyle = player.color; ctx.fillRect(player.x, player.y, player.width, player.height);
 
-        // Враги
-        for (const enemy of enemies) {
-            ctx.fillStyle = enemy.color;
-            ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
-        }
-
-        // Игрок
-        ctx.fillStyle = player.color;
-        ctx.fillRect(player.x, player.y, player.width, player.height);
-
-        // Интерфейс
-        ctx.fillStyle = 'white';
-        ctx.font = 'bold 18px Arial';
-        ctx.fillText(currentWorld.name, 10, 30);
-        
-        ctx.font = '16px Arial';
-        ctx.fillText('Уровень: ' + currentLevel, 10, 60);
-        ctx.fillText('Счет монет: ' + score, 150, 60);
-        
-        if (!allCoinsCollected) {
-            ctx.fillStyle = '#ffb300';
-            ctx.font = '14px Arial';
-            ctx.fillText('⚠️ Соберите всё золото для активации портала!', 10, 90);
-        }
+        ctx.fillStyle = 'white'; ctx.font = 'bold 18px Arial'; ctx.fillText(currentWorld.name, 10, 30);
+        ctx.font = '16px Arial'; ctx.fillText('Уровень: ' + currentLevel, 10, 60); ctx.fillText('Счет: ' + score, 150, 60);
+        if (!allCoinsCollected) { ctx.fillStyle = '#ffb300'; ctx.font = '14px Arial'; ctx.fillText('⚠️ Соберите золото!', 10, 90); }
 
         requestAnimationFrame(gameLoop);
     }
-
     gameLoop();
 };
 </script>
 </body>
+</html>
