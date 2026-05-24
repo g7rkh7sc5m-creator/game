@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>Платформер со Скинами</title>
+<title>Исправленный Платформер</title>
 <style>
     * { box-sizing: border-box; }
     body { background: #1a1a1a; margin: 0; padding: 0; font-family: Arial, sans-serif; overflow: hidden; width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: manipulation; }
@@ -46,6 +46,12 @@
     <div class="move-group"><div class="touch-btn" id="btnLeft">←</div><div class="touch-btn" id="btnRight">→</div></div>
     <div class="touch-btn jump-btn" id="btnJump">ВВЕРХ</div>
 </div><script>
+// ПРИНУДИТЕЛЬНЫЙ СБРОС ЗАВИСШЕГО КЭША (Защита от серого экрана)
+if (!localStorage.getItem('p_game_initialized_v2')) {
+    localStorage.clear();
+    localStorage.setItem('p_game_initialized_v2', 'true');
+}
+
 const canvas = document.getElementById('gameCanvas'); const ctx = canvas.getContext('2d');
 const overlay = document.getElementById('gameOverOverlay'); const timerText = document.getElementById('timerText'); const skinsGrid = document.getElementById('skinsGrid');
 
@@ -56,6 +62,7 @@ function resizeCanvas() {
 }
 window.addEventListener('resize', resizeCanvas); window.addEventListener('orientationchange', resizeCanvas);
 
+// Считывание или создание чистых данных
 let savedLives = localStorage.getItem('p_player_lives'); let playerLives = savedLives !== null ? parseInt(savedLives) : 3;
 let savedScore = localStorage.getItem('p_player_score'); let score = savedScore !== null ? parseInt(savedScore) : 0;
 let savedLevel = localStorage.getItem('p_player_level'); let currentLevel = savedLevel !== null ? parseInt(savedLevel) : 1;
@@ -76,46 +83,99 @@ const biomes = [
     { name: "ИЗУМРУДНЫЙ ЛЕС", bg: "#142518", plat: "#2e5c36", coin: "#00FF7F", door: "#ADFF2F" },
     { name: "НЕОНОВЫЙ КИБЕР", bg: "#120a1c", plat: "#ff0055", coin: "#00FFFF", door: "#ba00ff" }
 ];
-let currentBiome = biomes;
+let currentBiome = biomes[0]; // Исправлена опечатка автоматического выбора
+
 function saveProgress() { localStorage.setItem('p_player_lives', player.lives); localStorage.setItem('p_player_score', score); localStorage.setItem('p_player_level', currentLevel); }function generateNewLevel() {
-    let biomeIndex = Math.floor((currentLevel - 1) / 3) % biomes.length; let oldBiome = currentBiome; currentBiome = biomes[biomeIndex];
-    if (oldBiome !== currentBiome) { player.lives = player.maxLives; saveProgress(); }
-    player.x = 50; player.y = 350; player.vy = 0; player.jumpCount = 0; player.invulnerable = 0; window.playerParticles = [];
-    platforms = [{ x: 0, y: 450, width: 800, height: 50, color: currentBiome.plat, type: 'normal', active: true }]; coins = []; enemies = [];
-    let currentX = 100; let currentY = 370;
+    let biomeIndex = Math.floor((currentLevel - 1) / 3) % biomes.length; 
+    let oldBiome = currentBiome; 
+    currentBiome = biomes[biomeIndex];
+    
+    if (oldBiome !== currentBiome) { 
+        player.lives = player.maxLives; 
+        saveProgress(); 
+    }
+    
+    player.x = 50; 
+    player.y = 350; 
+    player.vy = 0; 
+    player.jumpCount = 0; 
+    player.invulnerable = 0; 
+    window.playerParticles = [];
+    
+    platforms = [{ x: 0, y: 450, width: 800, height: 50, color: currentBiome.plat, type: 'normal', active: true }]; 
+    coins = []; 
+    enemies = [];
+    
+    let currentX = 100; 
+    let currentY = 370;
+    
     while (currentY > 110) {
-        let platWidth = Math.floor(Math.random() * 60) + 100; let gapX = Math.floor(Math.random() * 80) + 60; 
+        let platWidth = Math.floor(Math.random() * 60) + 100; 
+        let gapX = Math.floor(Math.random() * 80) + 60; 
+        
         if (Math.random() > 0.5) currentX += gapX; else currentX -= (gapX + platWidth);
         currentY -= (Math.floor(Math.random() * 40) + 60);
-        if (currentX < 20) currentX = 20; if (currentX + platWidth > canvas.width - 20) currentX = canvas.width - platWidth - 20;
-        let randType = Math.random(); let platType = 'normal'; let platColor = currentBiome.plat;
-        if (randType < 0.15) { platType = 'trampoline'; platColor = '#00ffcc'; } 
-        else if (randType > 0.15 && randType < 0.35) { platType = 'disappear'; platColor = '#ffcc00'; }
+        
+        if (currentX < 20) currentX = 20; 
+        if (currentX + platWidth > canvas.width - 20) currentX = canvas.width - platWidth - 20;
+        
+        let randType = Math.random(); 
+        let platType = 'normal'; 
+        let platColor = currentBiome.plat;
+        
+        if (randType < 0.15) { 
+            platType = 'trampoline'; 
+            platColor = '#00ffcc'; 
+        } else if (randType > 0.15 && randType < 0.35) { 
+            platType = 'disappear'; 
+            platColor = '#ffcc00'; 
+        }
+        
         platforms.push({ x: currentX, y: currentY, width: platWidth, height: 20, color: platColor, type: platType, touchTime: 0, active: true });
+        
         if (Math.random() < 0.6) coins.push({ x: currentX + (platWidth / 2) - 5, y: currentY - 25, size: 10, collected: false });
+        
         if (Math.random() < 0.35 && platWidth >= 110 && platType === 'normal') {
             enemies.push({ x: currentX + 10, y: currentY - 30, width: 25, height: 30, speed: 1.5, rangeMin: currentX, rangeMax: currentX + platWidth });
         }
         currentX = currentX + (Math.random() * 40 - 20);
     }
-    let highestPlat = platforms[platforms.length - 1]; door.x = highestPlat.x + (highestPlat.width / 2) - 20; door.y = highestPlat.y - 60; door.open = false;
+    
+    let highestPlat = platforms[platforms.length - 1]; 
+    door.x = highestPlat.x + (highestPlat.width / 2) - 20; 
+    door.y = highestPlat.y - 60; 
+    door.open = false;
 }
 
 function renderShop() {
     skinsGrid.innerHTML = '';
     skinsData.forEach(skin => {
-        const card = document.createElement('div'); card.className = 'skin-card'; if (player.color === skin.color) card.classList.add('active');
+        const card = document.createElement('div'); 
+        card.className = 'skin-card'; 
+        if (player.color === skin.color) card.classList.add('active');
+        
         const isPurchased = purchasedSkins.includes(skin.id);
         card.innerHTML = `<div class="skin-preview" style="background: ${skin.color};"></div><div class="skin-name">${skin.name}</div><div class="skin-price">${isPurchased ? 'НАДЕТЬ' : skin.price + ' 🪙'}</div>`;
+        
         card.addEventListener('click', () => {
-            if (isPurchased) { player.color = skin.color; localStorage.setItem('p_current_skin_color', skin.color); renderShop(); } 
-            else {
+            if (isPurchased) { 
+                player.color = skin.color; 
+                localStorage.setItem('p_current_skin_color', skin.color); 
+                renderShop(); 
+            } else {
                 if (score >= skin.price) {
                     if (confirm(`Купить скин "${skin.name}" за ${skin.price} монет?`)) {
-                        score -= skin.price; purchasedSkins.push(skin.id); player.color = skin.color;
-                        localStorage.setItem('p_purchased_skins', JSON.stringify(purchasedSkins)); localStorage.setItem('p_current_skin_color', skin.color); saveProgress(); renderShop();
+                        score -= skin.price; 
+                        purchasedSkins.push(skin.id); 
+                        player.color = skin.color;
+                        localStorage.setItem('p_purchased_skins', JSON.stringify(purchasedSkins)); 
+                        localStorage.setItem('p_current_skin_color', skin.color); 
+                        saveProgress(); 
+                        renderShop();
                     }
-                } else { alert(`Не хватает монет! Нужно: ${skin.price} 🪙`); }
+                } else { 
+                    alert(`Не хватает монет! Нужно: ${skin.price} 🪙`); 
+                }
             }
         });
         skinsGrid.appendChild(card);
