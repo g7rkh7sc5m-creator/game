@@ -206,13 +206,18 @@ window.onload = function() {
             if (checkCollision(player, enemy)) generateLevel(currentLevel);
         }
 
-        for (const coin of coins) {
-            if (!coin.collected && checkCollision(player, {x: coin.x, y: coin.y, width: coin.size, height: coin.size})) {
-                coin.collected = true; score++;
-            }
-        }
-
-        const allCoinsCollected = coins.every(coin => coin.collected);
+       for (const coin of coins) {
+    // Исправлено: центрирование хитбокса монеты под её визуальный круг
+    if (!coin.collected && checkCollision(player, {
+        x: coin.x - coin.size, 
+        y: coin.y - coin.size, 
+        width: coin.size * 2, 
+        height: coin.size * 2
+    })) {
+        coin.collected = true; 
+        score++;
+    }
+}        const allCoinsCollected = coins.every(coin => coin.collected);
         if (allCoinsCollected && checkCollision(player, door)) {
             currentLevel++; generateLevel(currentLevel);
         }
