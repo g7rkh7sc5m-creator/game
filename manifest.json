@@ -1,0 +1,9 @@
+{
+  "name": "Super Platformer Game",
+  "short_name": "Platformer",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#111111",
+  "theme_color": "#00ff00",
+  "orientation": "landscape"
+}
