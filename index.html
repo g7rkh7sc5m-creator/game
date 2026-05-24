@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Platformer Game - Бесконечные Миры</title>
+    <title>Platformer Game - Двойной Прыжок</title>
     <style>
         body {
             background-color: #111;
@@ -32,7 +32,8 @@ window.onload = function() {
     // Базовые настройки игрока
     const player = {
         x: 50, y: 0, width: 30, height: 50, color: 'lime',
-        vy: 0, speed: 5, jumpStrength: 15, onGround: false
+        vy: 0, speed: 5, jumpStrength: 15, onGround: false,
+        jumpCount: 0 // Счетчик прыжков для двойного прыжка
     };
 
     let baseGravity = 0.8;
@@ -41,7 +42,10 @@ window.onload = function() {
     let score = 0;
     let currentLevel = 1;
 
-    // НАСТРОЙКИ МИРОВ (Цвета и физика)
+    // Эффект двойного прыжка (кольцо воздуха)
+    let jumpEffect = { x: 0, y: 0, radius: 0, active: false };
+
+    // НАСТРОЙКИ МИРОВ
     const worlds = [
         { name: "🌲 Лесной Мир", bg: "#1a2f1a", platColor: "#4a7c59", gravity: 0.8, speedBonus: 0, jumpBonus: 0 },
         { name: "🏜️ Пустынный Мир", bg: "#3d311d", platColor: "#d4a373", gravity: 0.8, speedBonus: 2, jumpBonus: 0 },
@@ -59,13 +63,10 @@ window.onload = function() {
         return Math.floor(Math.random() * (max - min + 1)) + min;
     }
 
-    // Обновление настроек текущего мира в зависимости от уровня
     function updateWorldSettings() {
-        // Каждые 5 уровней меняется мир (0, 1, 2, 3, а потом по кругу)
         let worldIndex = Math.floor((currentLevel - 1) / 5) % worlds.length;
         currentWorld = worlds[worldIndex];
         
-        // Применяем физику мира к игроку
         gravity = currentWorld.gravity;
         player.speed = 5 + currentWorld.speedBonus;
         player.jumpStrength = 15 + currentWorld.jumpBonus;
@@ -78,10 +79,12 @@ window.onload = function() {
         player.x = 50;
         player.y = 300;
         player.vy = 0;
+        player.jumpCount = 0; // Сброс прыжков
 
         platforms = [];
         coins = [];
         enemies = [];
+        jumpEffect.active = false;
 
         // Пол
         platforms.push({x: 0, y: 450, width: 800, height: 50, color: currentWorld.platColor});
@@ -93,38 +96,28 @@ window.onload = function() {
         for (let i = 0; i < platformCount; i++) {
             let platW = rand(100, 160);
             let platH = 20;
-            // В космосе платформы генерируем повыше, так как прыжок огромный
             let platY = (currentWorld.name.includes("Космос")) ? rand(100, 280) : rand(180, 360);
 
             platforms.push({
-                x: currentX,
-                y: platY,
-                width: platW,
-                height: platH,
-                color: currentWorld.platColor
+                x: currentX, y: platY, width: platW, height: platH, color: currentWorld.platColor
             });
 
             currentX += platW + rand(50, 80); 
         }
 
-        // Платформа под синей дверью портала
+        // Дверь портала
         door.x = rand(650, 740);
         let lastPlatY = rand(160, 250);
         platforms.push({ x: door.x - 20, y: lastPlatY + 60, width: 100, height: 20, color: currentWorld.platColor });
         door.y = lastPlatY;
 
-        // Золото на платформах
+        // Золото
         for (let i = 1; i < platforms.length; i++) {
             let p = platforms[i];
-            coins.push({
-                x: p.x + (p.width / 2),
-                y: p.y - 30,
-                size: 10,
-                collected: false
-            });
+            coins.push({ x: p.x + (p.width / 2), y: p.y - 30, size: 10, collected: false });
         }
 
-        // Красные враги (растут по числу и скорости)
+        // Враги
         const maxEnemiesOnLevel = Math.min(3, Math.floor(levelNumber / 2) + 1); 
         const enemySpeed = 1.5 + (levelNumber * 0.2); 
 
@@ -134,21 +127,37 @@ window.onload = function() {
             let p = platforms[i];
             if (p.width > 80) {
                 enemies.push({
-                    x: p.x + 10,
-                    y: p.y - 30,
-                    width: 30,
-                    height: 30,
-                    color: '#ff4d4d',
-                    speed: enemySpeed,
-                    minX: p.x,
-                    maxX: p.x + p.width
+                    x: p.x + 10, y: p.y - 30, width: 30, height: 30, color: '#ff4d4d',
+                    speed: enemySpeed, minX: p.x, maxX: p.x + p.width
                 });
             }
         }
     }
 
-    // Управление
-    document.addEventListener('keydown', (e) => { keys[e.key] = true; });
+    // Управление кнопками
+    document.addEventListener('keydown', (e) => { 
+        // Предотвращаем повторное срабатывание прыжка при удержании клавиши
+        if (!keys[e.key]) {
+            if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W' || e.key === 'ц' || e.key === 'Ц') {
+                // Если на земле или у нас остался второй прыжок
+                if (player.onGround || player.jumpCount < 2) {
+                    player.vy = -player.jumpStrength;
+                    player.onGround = false;
+                    player.jumpCount++;
+
+                    // Если это второй прыжок, активируем визуальный эффект эффекта взрыва воздуха под ногами
+                    if (player.jumpCount === 2) {
+                        jumpEffect.x = player.x + player.width / 2;
+                        jumpEffect.y = player.y + player.height;
+                        jumpEffect.radius = 5;
+                        jumpEffect.active = true;
+                    }
+                }
+            }
+        }
+        keys[e.key] = true; 
+    });
+    
     document.addEventListener('keyup', (e) => { keys[e.key] = false; });
 
     function checkCollision(rect1, rect2) {
@@ -161,17 +170,11 @@ window.onload = function() {
     generateLevel(currentLevel);
 
     function gameLoop() {
-        // Задний фон меняется в зависимости от мира
         canvas.style.background = currentWorld.bg;
 
         if (keys['ArrowLeft'] || keys['a'] || keys['A'] || keys['ф'] || keys['Ф']) player.x -= player.speed;
         if (keys['ArrowRight'] || keys['d'] || keys['D'] || keys['в'] || keys['В']) player.x += player.speed;
         
-        if ((keys[' '] || keys['ArrowUp'] || keys['w'] || keys['W'] || keys['ц'] || keys['Ц']) && player.onGround) {
-            player.vy = -player.jumpStrength;
-            player.onGround = false;
-        }
-
         player.vy += gravity;
         player.y += player.vy;
         
@@ -183,6 +186,7 @@ window.onload = function() {
                     player.y = plat.y - player.height;
                     player.vy = 0;
                     onGroundNext = true;
+                    player.jumpCount = 0; // Сбрасываем счетчик прыжков при приземлении!
                 }
             }
         }
@@ -191,7 +195,7 @@ window.onload = function() {
         if (player.x < 0) player.x = 0;
         if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
         if (player.y + player.height > canvas.height) {
-            generateLevel(currentLevel); // Упал — перезапуск уровня
+            generateLevel(currentLevel); // Упал в пропасть
         }
 
         // Враги
@@ -201,17 +205,15 @@ window.onload = function() {
                 enemy.speed = -enemy.speed;
             }
             if (checkCollision(player, enemy)) {
-                generateLevel(currentLevel); // Коснулся врага — перезапуск
+                generateLevel(currentLevel); // Умер от врага
             }
         }
 
         // Монеты
         for (const coin of coins) {
             if (!coin.collected &&
-                player.x < coin.x + coin.size && 
-                player.x + player.width > coin.x && 
-                player.y < coin.y + coin.size && 
-                player.y + player.height > coin.y) {
+                player.x < coin.x + coin.size && player.x + player.width > coin.x && 
+                player.y < coin.y + coin.size && player.y + player.height > coin.y) {
                 coin.collected = true;
                 score++;
             }
@@ -219,7 +221,7 @@ window.onload = function() {
 
         const allCoinsCollected = coins.every(coin => coin.collected);
 
-        // Переход на следующий уровень
+        // Дверь
         if (allCoinsCollected && checkCollision(player, door)) {
             currentLevel++;
             generateLevel(currentLevel);
@@ -228,19 +230,19 @@ window.onload = function() {
         // ОТРИСОВКА
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Платформы мира
+        // Платформы
         for (const plat of platforms) {
             ctx.fillStyle = plat.color;
             ctx.fillRect(plat.x, plat.y, plat.width, plat.height);
         }
 
-        // Дверь портала
+        // Дверь
         ctx.fillStyle = door.color;
         ctx.globalAlpha = allCoinsCollected ? 1.0 : 0.3;
         ctx.fillRect(door.x, door.y, door.width, door.height);
         ctx.globalAlpha = 1.0;
 
-        // Золото
+        // Монеты
         for (const coin of coins) {
             if (!coin.collected) {
                 ctx.fillStyle = 'gold';
@@ -250,17 +252,28 @@ window.onload = function() {
             }
         }
 
+        // Анимация эффекта двойного прыжка
+        if (jumpEffect.active) {
+            ctx.strokeStyle = 'rgba(255, 255, 255, ' + (1 - jumpEffect.radius / 30) + ')';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(jumpEffect.x, jumpEffect.y, jumpEffect.radius, 0, Math.PI * 2);
+            ctx.stroke();
+            jumpEffect.radius += 2;
+            if (jumpEffect.radius > 30) jumpEffect.active = false;
+        }
+
         // Враги
         for (const enemy of enemies) {
             ctx.fillStyle = enemy.color;
             ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
         }
 
-        // Игрок (зеленый кубик)
+        // Игрок
         ctx.fillStyle = player.color;
         ctx.fillRect(player.x, player.y, player.width, player.height);
 
-        // Текстовый интерфейс
+        // Интерфейс
         ctx.fillStyle = 'white';
         ctx.font = 'bold 18px Arial';
         ctx.fillText(currentWorld.name, 10, 30);
@@ -282,4 +295,3 @@ window.onload = function() {
 };
 </script>
 </body>
-</html>
