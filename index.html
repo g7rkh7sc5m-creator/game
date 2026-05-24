@@ -2,30 +2,78 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8" />
-<title>Бесконечные миры и уровни-комнаты</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Бесконечная процедурная генерация комнат</title>
 <style>
     body {
         background: #1a1a1a;
         margin: 0;
-        padding: 20px;
+        padding: 10px;
+        font-family: Arial, sans-serif;
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        user-select: none;
+        touch-action: manipulation;
     }
     canvas {
         background: #222; 
         display: block;
         margin: 0 auto;
+        max-width: 100%;
+        height: auto;
         box-shadow: 0 0 15px rgba(0,0,0,0.3);
     }
     .hint {
         text-align: center;
         color: #888;
-        font-family: Arial, sans-serif;
-        margin-top: 15px;
+        margin-top: 10px;
         font-size: 14px;
     }
-    /* Стили для кнопки скачивания */
+    .mobile-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        max-width: 800px;
+        margin: 15px auto 0 auto;
+        padding: 0 10px;
+    }
+    .move-buttons {
+        display: flex;
+        gap: 15px;
+    }
+    .touch-btn {
+        background: rgba(255, 255, 255, 0.15);
+        color: white;
+        border: 2px solid rgba(255, 255, 255, 0.4);
+        width: 65px;
+        height: 65px;
+        border-radius: 50%;
+        font-size: 24px;
+        font-weight: bold;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        touch-action: none; 
+    }
+    .touch-btn:active {
+        background: rgba(255, 255, 255, 0.4);
+        transform: scale(0.95);
+    }
+    .jump-btn {
+        width: 80px;
+        height: 80px;
+        background: rgba(0, 255, 0, 0.2);
+        border-color: lime;
+        color: lime;
+        font-size: 16px;
+    }
+    .jump-btn:active {
+        background: rgba(0, 255, 0, 0.5);
+    }
     .download-container {
         text-align: center;
-        margin-top: 15px;
+        margin-top: 20px;
     }
     .download-btn {
         background-color: lime;
@@ -33,37 +81,32 @@
         border: none;
         padding: 10px 20px;
         font-size: 16px;
-        font-family: Arial, sans-serif;
         font-weight: bold;
         cursor: pointer;
         border-radius: 5px;
         box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-        transition: all 0.2s ease;
-    }
-    .download-btn:hover {
-        background-color: #00cc00;
-        transform: translateY(-2px);
-    }
-    .download-btn:active {
-        transform: translateY(0);
     }
 </style>
 </head>
 <body>
 
 <canvas id="gameCanvas" width="800" height="500"></canvas>
-<div class="hint">Управление: Стрелки / WASD | Прыжок: Пробел / W (доступен двойной прыжок)</div>
+<div class="hint">Управление: Клавиатура (Стрелки / WASD) или Экранные кнопки</div>
 
-<!-- Контейнер с кнопкой -->
-<div class="download-container">
-    <button class="download-btn" id="downloadBtn">Скачать игру (.html)</button>
+<div class="mobile-controls">
+    <div class="move-buttons">
+        <div class="touch-btn" id="btnLeft">←</div>
+        <div class="touch-btn" id="btnRight">→</div>
+    </div>
+    <div class="touch-btn jump-btn" id="btnJump">ВВЕРХ</div>
 </div>
 
-<script>
+<div class="download-container">
+    <button class="download-btn" id="downloadBtn">Скачать игру (.html)</button>
+</div><script>
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-// Игрок (классический лаймовый кубик)
 const player = { 
     x: 50, 
     y: 400, 
@@ -71,7 +114,7 @@ const player = {
     height: 50, 
     color: 'lime', 
     vy: 0, 
-    speed: 5, 
+    speed: 5.5, 
     jumpStrength: 14, 
     onGround: false,
     jumpCount: 0,     
@@ -81,16 +124,14 @@ const player = {
 const gravity = 0.7;
 const keys = {};
 
-// Игровые объекты
 let platforms = [];
 let coins = [];
-let door = { x: 720, y: 80, width: 40, height: 60, open: false };
+let enemies = [];
+let door = { x: 0, y: 0, width: 40, height: 60, open: false };
 
-// Переменные прогресса
 let currentLevel = 1;
 let score = 0;
 
-// Конфигурация бесконечных миров (биомов)
 const biomes = [
     { name: "КЛАССИЧЕСКИЙ МИР", bg: "#222222", plat: "#8B4513", coin: "gold", door: "#4aeade" },
     { name: "ИЗУМРУДНЫЙ ЛЕС", bg: "#142518", plat: "#2e5c36", coin: "#00FF7F", door: "#ADFF2F" },
@@ -102,7 +143,6 @@ const biomes = [
 
 let currentBiome = biomes[0];
 
-// Функция генерации нового случайного уровня
 function generateNewLevel() {
     let biomeIndex = Math.floor((currentLevel - 1) / 3) % biomes.length;
     currentBiome = biomes[biomeIndex];
@@ -112,81 +152,105 @@ function generateNewLevel() {
     player.vy = 0;
     player.jumpCount = 0;
 
-    platforms = [
-        { x: 0, y: 450, width: 800, height: 50, color: currentBiome.plat }
-    ];
-
+    platforms = [{ x: 0, y: 450, width: 800, height: 50, color: currentBiome.plat }];
     coins = [];
+    enemies = [];
 
-    let numPlatforms = Math.floor(Math.random() * 3) + 3; 
-    
-    for (let i = 0; i < numPlatforms; i++) {
-        let platWidth = Math.random() * 50 + 110; 
-        let platX = 120 + i * 140 + (Math.random() * 40 - 20);
-        let platY = 370 - i * 75 - (Math.random() * 30);
+    let currentX = 100;
+    let currentY = 370;
+    let maxLevelHeight = 100;
 
-        if (platX + platWidth > canvas.width) platX = canvas.width - platWidth - 20;
+    while (currentY > maxLevelHeight) {
+        let platWidth = Math.floor(Math.random() * 60) + 100;
+        let gapX = Math.floor(Math.random() * 80) + 60; 
+        
+        if (Math.random() > 0.5) {
+            currentX += gapX;
+        } else {
+            currentX -= (gapX + platWidth);
+        }
+
+        currentY -= (Math.floor(Math.random() * 40) + 60);
+
+        if (currentX < 20) currentX = 20;
+        if (currentX + platWidth > canvas.width - 20) currentX = canvas.width - platWidth - 20;
 
         platforms.push({
-            x: platX,
-            y: platY,
+            x: currentX,
+            y: currentY,
             width: platWidth,
             height: 20,
             color: currentBiome.plat
         });
 
-        coins.push({
-            x: platX + platWidth / 2 - 5,
-            y: platY - 25,
-            size: 10,
-            collected: false
-        });
+        if (Math.random() < 0.6) {
+            coins.push({
+                x: currentX + (platWidth / 2) - 5,
+                y: currentY - 25,
+                size: 10,
+                collected: false
+            });
+        }
+
+        if (Math.random() < 0.4 && platWidth >= 110) {
+            enemies.push({
+                x: currentX + 10,
+                y: currentY - 30,
+                width: 25,
+                height: 30,
+                speed: (Math.random() > 0.5 ? 1.5 : -1.5),
+                rangeMin: currentX,
+                rangeMax: currentX + platWidth
+            });
+        }
+
+        currentX = currentX + (Math.random() * 40 - 20);
     }
 
-    let lastPlat = platforms[platforms.length - 1];
-    door.x = lastPlat.x + lastPlat.width / 2 - 20;
-    door.y = lastPlat.y - 60;
+    let highestPlat = platforms[platforms.length - 1];
+    door.x = highestPlat.x + (highestPlat.width / 2) - 20;
+    door.y = highestPlat.y - 60;
     door.open = false;
 }
 
 generateNewLevel();
 
-// Логика скачивания текущей страницы
+function doJump() {
+    if (player.jumpCount < player.maxJumps) {
+        player.vy = -player.jumpStrength;
+        player.jumpCount++;
+        player.onGround = false;
+    }
+}
+
+const btnLeft = document.getElementById('btnLeft');
+const btnRight = document.getElementById('btnRight');
+const btnJump = document.getElementById('btnJump');
+
+btnLeft.addEventListener('touchstart', (e) => { e.preventDefault(); keys['ArrowLeft'] = true; });
+btnLeft.addEventListener('touchend', (e) => { e.preventDefault(); keys['ArrowLeft'] = false; });
+btnRight.addEventListener('touchstart', (e) => { e.preventDefault(); keys['ArrowRight'] = true; });
+btnRight.addEventListener('touchend', (e) => { e.preventDefault(); keys['ArrowRight'] = false; });
+btnJump.addEventListener('touchstart', (e) => { e.preventDefault(); doJump(); });
+
 document.getElementById('downloadBtn').addEventListener('click', () => {
-    // Получаем весь HTML код текущей страницы
     const htmlCode = document.documentElement.outerHTML;
-    
-    // Создаем файл в памяти браузера
     const blob = new Blob([htmlCode], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
-    
-    // Скачиваем файл
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'my-platformer.html'; // Имя скачиваемого файла
+    a.download = 'procedural-platformer.html';
     document.body.appendChild(a);
     a.click();
-    
-    // Очищаем память
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 });
 
-// Управление
 document.addEventListener('keydown', (e) => { 
-    if ((e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w') && !keys[e.key]) {
-        if (player.jumpCount < player.maxJumps) {
-            player.vy = -player.jumpStrength;
-            player.jumpCount++;
-            player.onGround = false;
-        }
-    }
+    if ((e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w') && !keys[e.key]) doJump();
     keys[e.key] = true; 
 });
-
-document.addEventListener('keyup', (e) => { 
-    keys[e.key] = false; 
-});
+document.addEventListener('keyup', (e) => { keys[e.key] = false; });
 
 function checkCollision(rect1, rect2) {
     return rect1.x < rect2.x + rect2.width && 
@@ -208,7 +272,7 @@ function gameLoop() {
 
     for (const plat of platforms) {
         if (checkCollision(player, plat)) {
-            if (player.vy >= 0 && player.y + player.height - player.vy <= plat.y + 5) {
+            if (player.vy >= 0 && player.y + player.height - player.vy <= plat.y + 6) {
                 player.y = plat.y - player.height;
                 player.vy = 0;
                 player.onGround = true;
@@ -217,11 +281,22 @@ function gameLoop() {
         }
     }
 
+    for (const enemy of enemies) {
+        enemy.x += enemy.speed;
+        if (enemy.x <= enemy.rangeMin || enemy.x + enemy.width >= enemy.rangeMax) {
+            enemy.speed = -enemy.speed;
+        }
+
+        if (checkCollision(player, enemy)) {
+            let collectedInThisLevel = coins.filter(c => c.collected).length;
+            score -= collectedInThisLevel;
+            if (score < 0) score = 0;
+            generateNewLevel();
+        }
+    }
+
     if (player.y + player.height > canvas.height) {
-        player.y = canvas.height - player.height;
-        player.vy = 0;
-        player.onGround = true;
-        player.jumpCount = 0;
+        generateNewLevel();
     }
 
     let allCollected = true;
@@ -235,9 +310,7 @@ function gameLoop() {
         }
     }
 
-    if (allCollected) {
-        door.open = true;
-    }
+    if (allCollected) door.open = true;
 
     if (door.open && checkCollision(player, door)) {
         currentLevel++;
@@ -250,7 +323,6 @@ function gameLoop() {
     for (const plat of platforms) {
         ctx.fillStyle = plat.color;
         ctx.fillRect(plat.x, plat.y, plat.width, plat.height);
-        
         ctx.fillStyle = 'rgba(255,255,255,0.15)';
         ctx.fillRect(plat.x, plat.y, plat.width, 3);
     }
@@ -264,9 +336,15 @@ function gameLoop() {
         }
     }
 
+    for (const enemy of enemies) {
+        ctx.fillStyle = 'red';
+        ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+        ctx.fillStyle = 'white';
+        ctx.fillRect(enemy.x + (enemy.speed > 0 ? 15 : 4), enemy.y + 6, 5, 5);
+    }
+
     ctx.fillStyle = door.open ? currentBiome.door : '#555'; 
     ctx.fillRect(door.x, door.y, door.width, door.height);
-    
     ctx.fillStyle = 'gold';
     ctx.beginPath();
     ctx.arc(door.x + (door.open ? 8 : 32), door.y + 30, 3, 0, Math.PI * 2);
@@ -287,11 +365,11 @@ function gameLoop() {
     if (!door.open) {
         ctx.fillStyle = '#ffb3b3';
         ctx.font = '14px Arial';
-        ctx.fillText('Соберите монеты, чтобы открыть проход', 300, 35);
+        ctx.fillText('Соберите все монеты и избегайте красных врагов!', 260, 35);
     } else {
         ctx.fillStyle = '#b3ffb3';
         ctx.font = 'bold 14px Arial';
-        ctx.fillText('Портал в следующий мир открыт!', 300, 35);
+        ctx.fillText('Портал открыт! Бегите к двери!', 300, 35);
     }
 
     requestAnimationFrame(gameLoop);
