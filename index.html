@@ -6,44 +6,23 @@
 <title>Хардкорный процедурный платформер</title>
 <style>
     * { box-sizing: border-box; }
-    body {
-        background: #1a1a1a; margin: 0; padding: 0; font-family: Arial, sans-serif; overflow: hidden;
-        width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
-        -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: manipulation;
-    }
+    body { background: #1a1a1a; margin: 0; padding: 0; font-family: Arial, sans-serif; overflow: hidden; width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: manipulation; }
     .game-container { position: relative; max-width: 100%; max-height: 100%; }
     canvas { background: #222; display: block; max-width: 100%; max-height: 100%; box-shadow: 0 0 15px rgba(0,0,0,0.5); }
-    
-    .game-over-overlay {
-        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0, 0, 0, 0.9); display: none; flex-direction: column;
-        justify-content: center; align-items: center; color: white; z-index: 5; padding: 20px;
-    }
+    .game-over-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); display: none; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 5; padding: 20px; }
     .game-over-overlay h1 { color: #ff3333; margin: 0 0 5px 0; font-size: 28px; text-shadow: 0 0 10px rgba(255,0,0,0.5); }
     .timer-text { font-size: 20px; font-weight: bold; margin: 5px 0; color: #ffcc00; }
-    .test-revive-btn {
-        background: gold; color: #111; border: none; padding: 10px 20px; 
-        font-weight: bold; border-radius: 5px; cursor: pointer; font-size: 14px; margin-bottom: 15px;
-    }
-    
+    .test-revive-btn { background: gold; color: #111; border: none; padding: 10px 20px; font-weight: bold; border-radius: 5px; cursor: pointer; font-size: 14px; margin-bottom: 15px; }
     .shop-title { font-size: 16px; color: #aaa; margin-bottom: 10px; font-weight: bold; letter-spacing: 1px; }
     .skins-grid { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; max-width: 600px; }
-    .skin-card {
-        background: #2a2a2a; border: 2px solid #444; border-radius: 8px; padding: 8px;
-        display: flex; flex-direction: column; align-items: center; width: 105px; cursor: pointer;
-    }
+    .skin-card { background: #2a2a2a; border: 2px solid #444; border-radius: 8px; padding: 8px; display: flex; flex-direction: column; align-items: center; width: 105px; cursor: pointer; }
     .skin-card.active { border-color: lime; background: #2d3d2d; }
     .skin-preview { width: 25px; height: 35px; margin-bottom: 5px; border-radius: 3px; }
     .skin-name { font-size: 11px; font-weight: bold; margin-bottom: 4px; text-align: center; }
     .skin-price { font-size: 11px; color: #ffcc00; font-weight: bold; }
-
     .mobile-ui { position: absolute; bottom: 30px; left: 0; right: 0; display: flex; justify-content: space-between; padding: 0 30px; width: 100%; pointer-events: none; z-index: 2; }
     .move-group { display: flex; gap: 20px; pointer-events: auto; }
-    .touch-btn {
-        background: rgba(255, 255, 255, 0.2); color: white; border: 2px solid rgba(255, 255, 255, 0.5);
-        width: 70px; height: 70px; border-radius: 50%; font-size: 28px; font-weight: bold;
-        display: flex; justify-content: center; align-items: center; cursor: pointer; pointer-events: auto;
-    }
+    .touch-btn { background: rgba(255, 255, 255, 0.2); color: white; border: 2px solid rgba(255, 255, 255, 0.5); width: 70px; height: 70px; border-radius: 50%; font-size: 28px; font-weight: bold; display: flex; justify-content: center; align-items: center; cursor: pointer; pointer-events: auto; }
     .touch-btn:active { background: rgba(255, 255, 255, 0.5); }
     .jump-btn { width: 85px; height: 85px; background: rgba(0, 255, 0, 0.25); border-color: lime; color: lime; font-size: 18px; }
     .jump-btn:active { background: rgba(0, 255, 0, 0.6); }
@@ -53,7 +32,6 @@
 </head>
 <body>
 <div class="download-container"><button class="download-btn" id="downloadBtn">Скачать (.html)</button></div>
-
 <div class="game-container" id="gameContainer">
     <canvas id="gameCanvas"></canvas>
     <div class="game-over-overlay" id="gameOverOverlay">
@@ -64,14 +42,13 @@
         <div class="skins-grid" id="skinsGrid"></div>
     </div>
 </div>
-
 <div class="mobile-ui">
     <div class="move-group"><div class="touch-btn" id="btnLeft">←</div><div class="touch-btn" id="btnRight">→</div></div>
     <div class="touch-btn jump-btn" id="btnJump">ВВЕРХ</div>
 </div><script>
-if (!localStorage.getItem('p_game_initialized_v4')) {
+if (!localStorage.getItem('p_game_initialized_v6')) {
     localStorage.clear();
-    localStorage.setItem('p_game_initialized_v4', 'true');
+    localStorage.setItem('p_game_initialized_v6', 'true');
 }
 
 const canvas = document.getElementById('gameCanvas'); const ctx = canvas.getContext('2d');
@@ -96,9 +73,9 @@ const skinsData = [
 let purchasedSkins = JSON.parse(localStorage.getItem('p_purchased_skins')) || ['lime'];
 let currentSkinColor = localStorage.getItem('p_current_skin_color') || 'lime';
 
-// Добавлена физическая горизонтальная скорость vx для скольжения
 const player = { x: 50, y: 350, width: 30, height: 50, color: currentSkinColor, vx: 0, vy: 0, speed: 5.5, jumpStrength: 14, onGround: false, jumpCount: 0, maxJumps: 2, maxLives: 3, invulnerable: 0 };
 player.lives = playerLives; const gravity = 0.7; const keys = {}; let platforms = []; let coins = []; let enemies = []; let door = { x: 0, y: 0, width: 40, height: 60, open: false }; let isGameOver = false; window.playerParticles = [];
+let standingOnIce = false; let standingOnMud = false;
 
 const biomes = [
     { name: "КЛАССИЧЕСКИЙ МИР", bg: "#222222", plat: "#8B4513", coin: "gold", door: "#4aeade" },
@@ -107,74 +84,32 @@ const biomes = [
 ];
 let currentBiome = biomes;
 function saveProgress() { localStorage.setItem('p_player_lives', player.lives); localStorage.setItem('p_player_score', score); localStorage.setItem('p_player_level', currentLevel); }function generateNewLevel() {
-    let biomeIndex = Math.floor((currentLevel - 1) / 3) % biomes.length; 
-    let oldBiome = currentBiome; 
-    currentBiome = biomes[biomeIndex];
-    
-    if (oldBiome !== currentBiome) { 
-        player.lives = player.maxLives; 
-        saveProgress(); 
-    }
-    
-    player.x = 50; player.y = 350; player.vx = 0; player.vy = 0; player.jumpCount = 0; player.invulnerable = 0; 
-    window.playerParticles = [];
-    
-    platforms = [{ x: 0, y: 450, width: 800, height: 50, color: currentBiome.plat, type: 'normal', active: true }]; 
-    coins = []; enemies = [];
-    
+    let biomeIndex = Math.floor((currentLevel - 1) / 3) % biomes.length; currentBiome = biomes[biomeIndex];
+    player.x = 50; player.y = 350; player.vx = 0; player.vy = 0; player.jumpCount = 0; player.invulnerable = 0; window.playerParticles = []; standingOnIce = false; standingOnMud = false;
+    platforms = [{ x: 0, y: 450, width: 800, height: 50, color: currentBiome.plat, type: 'normal', active: true }]; coins = []; enemies = [];
     let currentX = 100; let currentY = 370;
-    
     while (currentY > 110) {
-        let platWidth = Math.floor(Math.random() * 60) + 100; 
-        let gapX = Math.floor(Math.random() * 80) + 60; 
-        
+        let platWidth = Math.floor(Math.random() * 60) + 100; let gapX = Math.floor(Math.random() * 80) + 60; 
         if (Math.random() > 0.5) currentX += gapX; else currentX -= (gapX + platWidth);
         currentY -= (Math.floor(Math.random() * 40) + 60);
-        
-        if (currentX < 20) currentX = 20; 
-        if (currentX + platWidth > canvas.width - 20) currentX = canvas.width - platWidth - 20;
-        
-        let randType = Math.random(); 
-        let platType = 'normal'; 
-        let platColor = currentBiome.plat;
-        
-        // Математическое распределение всех 5 типов блоков
-        if (randType < 0.12) { 
-            platType = 'trampoline'; // Батут
-            platColor = '#00ffcc'; 
-        } else if (randType >= 0.12 && randType < 0.24) { 
-            platType = 'disappear'; // Исчезающая
-            platColor = '#ffcc00'; 
-        } else if (randType >= 0.24 && randType < 0.36) {
-            platType = 'ice'; // Скользкий лед
-            platColor = '#33ccff';
-        } else if (randType >= 0.36 && randType < 0.48) {
-            platType = 'mud'; // Токсичная грязь
-            platColor = '#9933ff';
-        } else if (randType >= 0.48 && randType < 0.58) {
-            platType = 'lava'; // Лавовые шипы
-            platColor = '#ff6600';
-        }
-        
+        if (currentX < 20) currentX = 20; if (currentX + platWidth > canvas.width - 20) currentX = canvas.width - platWidth - 20;
+        let randType = Math.random(); let platType = 'normal'; let platColor = currentBiome.plat;
+        if (randType < 0.12) { platType = 'trampoline'; platColor = '#00ffcc'; } 
+        else if (randType >= 0.12 && randType < 0.24) { platType = 'disappear'; platColor = '#ffcc00'; } 
+        else if (randType >= 0.24 && randType < 0.36) { platType = 'ice'; platColor = '#33ccff'; } 
+        else if (randType >= 0.36 && randType < 0.48) { platType = 'mud'; platColor = '#9933ff'; } 
+        else if (randType >= 0.48 && randType < 0.58) { platType = 'lava'; platColor = '#ff6600'; }
         platforms.push({ x: currentX, y: currentY, width: platWidth, height: 20, color: platColor, type: platType, touchTime: 0, active: true });
-        
-        // На лаве монеты и враги никогда не появляются
         if (platType !== 'lava') {
             if (Math.random() < 0.6) coins.push({ x: currentX + (platWidth / 2) - 5, y: currentY - 25, size: 10, collected: false });
             if (Math.random() < 0.35 && platWidth >= 110 && platType === 'normal') {
-                // Скорость врагов базово 1.5, но с 4 уровня увеличивается
-                let speedBoost = currentLevel >= 4 ? (currentLevel - 3) * 0.15 : 0;
-                let enemySpeed = 1.5 + speedBoost;
+                let speedBoost = currentLevel >= 4 ? (currentLevel - 3) * 0.15 : 0; let enemySpeed = 1.5 + speedBoost;
                 enemies.push({ x: currentX + 10, y: currentY - 30, width: 25, height: 30, speed: (Math.random() > 0.5 ? enemySpeed : -enemySpeed), rangeMin: currentX, rangeMax: currentX + platWidth });
             }
         }
         currentX = currentX + (Math.random() * 40 - 20);
     }
-    
-    let highestPlat = platforms[platforms.length - 1]; 
-    door.x = highestPlat.x + (highestPlat.width / 2) - 20; 
-    door.y = highestPlat.y - 60; 
-    door.open = false;
+    let highestPlat = platforms[platforms.length - 1]; door.x = highestPlat.x + (highestPlat.width / 2) - 20; door.y = highestPlat.y - 60; door.open = false;
 }
 
 function renderShop() {
@@ -195,7 +130,8 @@ function renderShop() {
             }
         });
         skinsGrid.appendChild(card);
-    });}const REGEN_TIME = 5 * 60 * 1000;
+    });
+}const REGEN_TIME = 5 * 60 * 1000;
 function checkLifeRegen() {
     if (player.lives <= 0) {
         isGameOver = true; overlay.style.display = 'flex';
@@ -226,57 +162,93 @@ document.getElementById('btnJump').addEventListener('touchstart', (e) => { e.pre
 document.getElementById('downloadBtn').addEventListener('click', () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([document.documentElement.outerHTML], { type: 'text/html' })); a.download = 'game.html'; a.click(); });
 document.addEventListener('keydown', (e) => { if (isGameOver) return; if ((e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'ц') && !keys[e.key]) doJump(); if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'ф') keys['ArrowLeft'] = true; if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'в') keys['ArrowRight'] = true; });
 document.addEventListener('keyup', (e) => { if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'ф') keys['ArrowLeft'] = false; if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'в') keys['ArrowRight'] = false; });
-function checkCollision(r1, r2) { return r1.x < r2.x + r2.width && r1.x + r1.width > r2.x && r1.y < r2.y + r2.height && r1.y + r1.height > r2.y; }
-function gameLoop() {
+function checkCollision(r1, r2) { return r1.x < r2.x + r2.width && r1.x + r1.width > r2.x && r1.y < r2.y + r2.height && r1.y + r1.height > r2.y; }function gameLoop() {
     checkLifeRegen();
     if (!isGameOver) {
-        let onIce = false; let onMud = false;
-        for (const plat of platforms) {
-            if (plat.active && checkCollision(player, plat) && player.y + player.height === plat.y) {
-                if (plat.type === 'ice') onIce = true;
-                if (plat.type === 'mud') onMud = true;
-            }
-        }
-        // Расчёт горизонтальной физики (лед, грязь, норма)
-        let currentMaxSpeed = onMud ? player.speed * 0.5 : player.speed;
-        if (onIce) {
-            if (keys['ArrowLeft']) player.vx -= 0.25; else if (keys['ArrowRight']) player.vx += 0.25;
-            player.vx *= 0.98; // Инерция скольжения
-            if (player.vx > currentMaxSpeed) player.vx = currentMaxSpeed; if (player.vx < -currentMaxSpeed) player.vx = -currentMaxSpeed;
+        // Расчёт скорости бега: если на грязи, режем её на 60%
+        let currentMaxSpeed = standingOnMud ? player.speed * 0.4 : player.speed;
+        
+        if (standingOnIce) {
+            // Плавный разгон на льду
+            if (keys['ArrowLeft']) player.vx -= 0.35; 
+            else if (keys['ArrowRight']) player.vx += 0.35;
+            player.vx *= 0.95; // Эффект скольжения (инерция)
+            if (player.vx > currentMaxSpeed) player.vx = currentMaxSpeed; 
+            if (player.vx < -currentMaxSpeed) player.vx = -currentMaxSpeed;
         } else {
-            if (keys['ArrowLeft']) player.vx = -currentMaxSpeed; else if (keys['ArrowRight']) player.vx = currentMaxSpeed; else player.vx = 0;
+            // Обычное резкое управление вне льда
+            if (keys['ArrowLeft']) player.vx = -currentMaxSpeed; 
+            else if (keys['ArrowRight']) player.vx = currentMaxSpeed; 
+            else player.vx = 0;
         }
+        
         player.x += player.vx;
         if (player.x < 0) player.x = 0; if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
         player.vy += gravity; player.y += player.vy; player.onGround = false; if (player.invulnerable > 0) player.invulnerable--;
+        
+        // Создание шлейфа частиц при движении
         if (keys['ArrowLeft'] || keys['ArrowRight'] || Math.abs(player.vy) > 0.1) {
-            let pColor = player.color; if (player.color === '#ff3300') pColor = Math.random() > 0.5 ? '#ff3300' : '#ff9900'; else if (player.color === '#ffd700') pColor = Math.random() > 0.5 ? '#ffd700' : '#fffb00'; else if (player.color === '#00ffff') pColor = Math.random() > 0.5 ? '#00ffff' : '#00aaff';
-            window.playerParticles.push({ x: player.x + player.width / 2 + (Math.random() * 10 - 5), y: player.y + player.height - (Math.random() * 15), size: Math.random() * 5 + 3, color: pColor, alpha: 1, vx: (Math.random() * 2 - 1) - (keys['ArrowRight'] ? 1.5 : (keys['ArrowLeft'] ? -1.5 : 0)), vy: Math.random() * -1 - 0.5 });
+            let pColor = player.color; 
+            if (player.color === '#ff3300') pColor = Math.random() > 0.5 ? '#ff3300' : '#ff9900'; 
+            else if (player.color === '#ffd700') pColor = Math.random() > 0.5 ? '#ffd700' : '#fffb00'; 
+            else if (player.color === '#00ffff') pColor = Math.random() > 0.5 ? '#00ffff' : '#00aaff';
+
+            window.playerParticles.push({ 
+                x: player.x + player.width / 2 + (Math.random() * 10 - 5), 
+                y: player.y + player.height - (Math.random() * 15), 
+                size: Math.random() * 5 + 3, 
+                color: pColor, 
+                alpha: 1, 
+                vx: (Math.random() * 2 - 1) - (keys['ArrowRight'] ? 1.5 : (keys['ArrowLeft'] ? -1.5 : 0)), 
+                vy: Math.random() * -1 - 0.5 
+            });
         }
         window.playerParticles.forEach((p, index) => { p.x += p.vx; p.y += p.vy; p.alpha -= 0.03; p.size -= 0.1; if (p.alpha <= 0 || p.size <= 0) window.playerParticles.splice(index, 1); });
+        
+        // Сбрасываем флаги перед проверкой коллизий
+        standingOnIce = false;
+        standingOnMud = false;
+
         for (const plat of platforms) {
             if (!plat.active) continue;
             if (checkCollision(player, plat) && player.vy >= 0 && player.y + player.height - player.vy <= plat.y + 6) {
                 player.y = plat.y - player.height; player.vy = 0; player.onGround = true; player.jumpCount = 0;
+                
+                // Считываем эффекты в момент физического контакта ногами
+                if (plat.type === 'ice') standingOnIce = true;
+                if (plat.type === 'mud') standingOnMud = true;
+
                 if (plat.type === 'trampoline') { player.vy = -20; player.onGround = false; }
                 if (plat.type === 'disappear' && plat.touchTime === 0) plat.touchTime = Date.now();
                 if (plat.type === 'lava' && player.invulnerable === 0) { player.invulnerable = 60; player.vy = -12; player.onGround = false; handlePlayerDeath(); }
             }
             if (plat.type === 'disappear' && plat.touchTime > 0) { if (Date.now() - plat.touchTime > 800) { plat.active = false; if (player.onGround && player.y + player.height === plat.y) player.onGround = false; } }
         }
-        for (const enemy of enemies) { enemy.x += enemy.speed; if (enemy.x <= enemy.rangeMin || enemy.x + enemy.width >= enemy.rangeMax) enemy.speed = -enemy.speed; if (checkCollision(player, enemy)) { if (player.invulnerable === 0) { player.invulnerable = 90; handlePlayerDeath(); } } }
+
+        for (const enemy of enemies) { 
+            enemy.x += enemy.speed; 
+            if (enemy.x <= enemy.rangeMin || enemy.x + enemy.width >= enemy.rangeMax) enemy.speed = -enemy.speed; 
+            if (checkCollision(player, enemy)) { if (player.invulnerable === 0) { player.invulnerable = 90; handlePlayerDeath(); } } 
+        }
         if (player.y + player.height > canvas.height) handlePlayerDeath();
+        
         let allCollected = true;
         for (const coin of coins) { if (!coin.collected) { allCollected = false; if (checkCollision(player, {x: coin.x, y: coin.y, width: coin.size, height: coin.size})) { coin.collected = true; score++; saveProgress(); } } }
         if (allCollected) door.open = true; if (door.open && checkCollision(player, door)) { currentLevel++; saveProgress(); generateNewLevel(); }
     }
+
+    // ОТРИСОВКА ГРАФИКИ
     ctx.fillStyle = currentBiome.bg; ctx.fillRect(0, 0, canvas.width, canvas.height);
     for (const plat of platforms) { if (!plat.active) continue; ctx.fillStyle = plat.color; if (plat.type === 'disappear' && plat.touchTime > 0 && Math.floor(Date.now() / 100) % 2 === 0) ctx.fillStyle = 'rgba(255,204,0,0.4)'; ctx.fillRect(plat.x, plat.y, plat.width, plat.height); }
     for (const coin of coins) { if (!coin.collected) { ctx.fillStyle = currentBiome.coin; ctx.beginPath(); ctx.arc(coin.x + 5, coin.y + 5, 10, 0, Math.PI * 2); ctx.fill(); } }
     for (const enemy of enemies) { ctx.fillStyle = 'red'; ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height); }
     ctx.fillStyle = door.open ? currentBiome.door : '#555'; ctx.fillRect(door.x, door.y, door.width, door.height);
+    
+    // Отрисовка шлейфа частиц перед игроком
     if (window.playerParticles) { window.playerParticles.forEach(p => { ctx.save(); ctx.globalAlpha = p.alpha; ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, p.size, p.size); ctx.restore(); }); }
+    
     if (!isGameOver && (player.invulnerable === 0 || Math.floor(player.invulnerable / 5) % 2 === 0)) { ctx.fillStyle = player.color; ctx.fillRect(player.x, player.y, player.width, player.height); }
+    
     ctx.fillStyle = 'white'; ctx.font = '20px Arial'; ctx.fillText('Монет: ' + score, 15, 35); ctx.fillText('Уровень: ' + currentLevel, 670, 35);
     let hearts = ''; for(let i=0; i<player.lives; i++) hearts += '❤️ '; ctx.fillText('Жизни: ' + hearts, 15, 65);
     requestAnimationFrame(gameLoop);
