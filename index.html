@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>Хардкорный процедурный платформер со спецэффектами</title>
+<title>Хардкорный процедурный платформер v9</title>
 <style>
     * { box-sizing: border-box; }
     body {
@@ -34,7 +34,7 @@
     }
     .skin-card.active { border-color: lime; background: #2d3d2d; }
     .skin-preview { width: 20px; height: 30px; margin-bottom: 5px; border-radius: 3px; }
-    .skin-name { font-size: 10px; font-weight: bold; margin-bottom: 4px; text-align: center; white-space: nowrap; }
+    .skin-name { font-size: 10px; font-weight: bold; margin-bottom: 4px; text-align: center; }
     .skin-price { font-size: 10px; color: #ffcc00; font-weight: bold; }
 
     .mobile-ui { position: absolute; bottom: 30px; left: 0; right: 0; display: flex; justify-content: space-between; padding: 0 30px; width: 100%; pointer-events: none; z-index: 2; }
@@ -69,10 +69,10 @@
     <div class="move-group"><div class="touch-btn" id="btnLeft">←</div><div class="touch-btn" id="btnRight">→</div></div>
     <div class="touch-btn jump-btn" id="btnJump">ВВЕРХ</div>
 </div><script>
-// ОБНОВЛЕНИЕ КЭША ДО ВЕРСИИ V7 С НОВЫМИ СУПЕР-СКИНАМИ
-if (!localStorage.getItem('p_game_initialized_v7')) {
+// ПРИНУДИТЕЛЬНЫЙ СБРОС СТАРОГО КЭША ДО СВЕЖЕЙ ВЕРСИИ V9
+if (!localStorage.getItem('p_game_initialized_v9')) {
     localStorage.clear();
-    localStorage.setItem('p_game_initialized_v7', 'true');
+    localStorage.setItem('p_game_initialized_v9', 'true');
 }
 
 const canvas = document.getElementById('gameCanvas'); const ctx = canvas.getContext('2d');
@@ -85,11 +85,12 @@ function resizeCanvas() {
 }
 window.addEventListener('resize', resizeCanvas); window.addEventListener('orientationchange', resizeCanvas);
 
+// Считывание игрового прогресса
 let savedLives = localStorage.getItem('p_player_lives'); let playerLives = savedLives !== null ? parseInt(savedLives) : 3;
 let savedScore = localStorage.getItem('p_player_score'); let score = savedScore !== null ? parseInt(savedScore) : 0;
 let savedLevel = localStorage.getItem('p_player_level'); let currentLevel = savedLevel !== null ? parseInt(savedLevel) : 1;
 
-// ОБНОВЛЕННЫЙ КАТАЛОГ: Добавлено 4 новых эпических скина
+// Полный каталог из 9 скинов
 const skinsData = [
     { id: 'lime', name: 'ЛАЙМ', color: 'lime', price: 0 },
     { id: 'cyan', name: 'ОКЕАН', color: '#00ffff', price: 30 },
@@ -99,14 +100,14 @@ const skinsData = [
     { id: 'purple', name: 'КИБЕР', color: '#ba00ff', price: 120 },
     { id: 'lightning', name: 'МОЛНИЯ', color: '#ffffff', price: 160 },
     { id: 'fire', name: 'ПЛАМЯ', color: '#ff3300', price: 200 },
-    { id: 'matter', name: 'МАТЕРИЯ', color: '#0b001a', price: 250 }
+    { id: 'matter', name: 'МАТЕРИЯ', color: '#440066', price: 250 }
 ];
 
 let purchasedSkins = JSON.parse(localStorage.getItem('p_purchased_skins')) || ['lime'];
 let currentSkinColor = localStorage.getItem('p_current_skin_color') || 'lime';
+let currentSkinId = localStorage.getItem('p_current_skin_id') || 'lime';
 
-// Добавлено свойство skinId игроку, чтобы точнее определять тип эффектов в физике движка
-const player = { x: 50, y: 350, width: 30, height: 50, color: currentSkinColor, skinId: localStorage.getItem('p_current_skin_id') || 'lime', vx: 0, vy: 0, speed: 5.5, jumpStrength: 14, onGround: false, jumpCount: 0, maxJumps: 2, maxLives: 3, invulnerable: 0 };
+const player = { x: 50, y: 350, width: 30, height: 50, color: currentSkinColor, skinId: currentSkinId, vx: 0, vy: 0, speed: 5.5, jumpStrength: 14, onGround: false, jumpCount: 0, maxJumps: 2, maxLives: 3, invulnerable: 0 };
 player.lives = playerLives; const gravity = 0.7; const keys = {}; let platforms = []; let coins = []; let enemies = []; let door = { x: 0, y: 0, width: 40, height: 60, open: false }; let isGameOver = false; window.playerParticles = [];
 let standingOnIce = false; let standingOnMud = false;
 
@@ -118,7 +119,8 @@ const biomes = [
 let currentBiome = biomes;
 function saveProgress() { localStorage.setItem('p_player_lives', player.lives); localStorage.setItem('p_player_score', score); localStorage.setItem('p_player_level', currentLevel); }function generateNewLevel() {
     let biomeIndex = Math.floor((currentLevel - 1) / 3) % biomes.length; currentBiome = biomes[biomeIndex];
-    player.x = 50; player.y = 350; player.vx = 0; player.vy = 0; player.jumpCount = 0; player.invulnerable = 0; window.playerParticles = []; HarmanOnIce = false; HarmanOnMud = false;
+    if (player.lives <= 0) player.lives = player.maxLives;
+    player.x = 50; player.y = 350; player.vx = 0; player.vy = 0; player.jumpCount = 0; player.invulnerable = 0; window.playerParticles = []; standingOnIce = false; standingOnMud = false;
     platforms = [{ x: 0, y: 450, width: 800, height: 50, color: currentBiome.plat, type: 'normal', active: true }]; coins = []; enemies = [];
     let currentX = 100; let currentY = 370;
     while (currentY > 110) {
@@ -150,24 +152,19 @@ function renderShop() {
     skinsData.forEach(skin => {
         const card = document.createElement('div'); card.className = 'skin-card'; if (player.color === skin.color) card.classList.add('active');
         const isPurchased = purchasedSkins.includes(skin.id);
-        card.innerHTML = `<div class="skin-preview" style="background: ${skin.color === '#0b001a' ? 'radial-gradient(circle, #ba00ff 20%, #0b001a 80%)' : skin.color};"></div><div class="skin-name">${skin.name}</div><div class="skin-price">${isPurchased ? 'НАДЕТЬ' : skin.price + ' 🪙'}</div>`;
+        card.innerHTML = `<div class="skin-preview" style="background: ${skin.color};"></div><div class="skin-name">${skin.name}</div><div class="skin-price">${isPurchased ? 'НАДЕТЬ' : skin.price + ' 🪙'}</div>`;
         card.addEventListener('click', () => {
-            if (isPurchased) { 
-                player.color = skin.color; player.skinId = skin.id;
-                localStorage.setItem('p_current_skin_color', skin.color); localStorage.setItem('p_current_skin_id', skin.id);
-                renderShop(); 
-            } else {
+            if (isPurchased) { player.color = skin.color; player.skinId = skin.id; localStorage.setItem('p_current_skin_color', skin.color); localStorage.setItem('p_current_skin_id', skin.id); renderShop(); } 
+            else {
                 if (score >= skin.price) {
-                    if (confirm(`Купить скин "${skin.name}" за ${skin.price} монет?`)) {
-                        score -= skin.price; purchasedSkins.push(skin.id); player.color = skin.color; player.skinId = skin.id;
-                        localStorage.setItem('p_purchased_skins', JSON.stringify(purchasedSkins)); localStorage.setItem('p_current_skin_color', skin.color); localStorage.setItem('p_current_skin_id', skin.id);
-                        saveProgress(); renderShop();
-                    }
+                    score -= skin.price; purchasedSkins.push(skin.id); player.color = skin.color; player.skinId = skin.id;
+                    localStorage.setItem('p_purchased_skins', JSON.stringify(purchasedSkins)); localStorage.setItem('p_current_skin_color', skin.color); localStorage.setItem('p_current_skin_id', skin.id); saveProgress(); renderShop();
                 } else { alert(`Не хватает монет! Нужно: ${skin.price} 🪙`); }
             }
         });
         skinsGrid.appendChild(card);
-    });const REGEN_TIME = 5 * 60 * 1000;
+    });
+}const REGEN_TIME = 5 * 60 * 1000;
 function checkLifeRegen() {
     if (player.lives <= 0) {
         isGameOver = true; overlay.style.display = 'flex';
@@ -176,15 +173,42 @@ function checkLifeRegen() {
         const rBtn = document.getElementById('testReviveBtn');
         if (score < 100) { rBtn.style.opacity = "0.5"; rBtn.innerText = `Нужно 100 🪙 (У вас: ${score})`; } else { rBtn.style.opacity = "1"; rBtn.innerText = "Восстановить за 100 🪙"; }
         if (skinsGrid.children.length === 0) renderShop();
-        if (timeLeft <= 0) { player.lives = 1; isGameOver = false; overlay.style.display = 'none'; skinsGrid.innerHTML = ''; localStorage.removeItem('p_player_death_time'); saveProgress(); generateNewLevel(); } 
+        if (timeLeft <= 0) { player.lives = 3; isGameOver = false; overlay.style.display = 'none'; skinsGrid.innerHTML = ''; localStorage.removeItem('p_player_death_time'); saveProgress(); generateNewLevel(); } 
         else { let min = Math.floor(timeLeft / 60000); let sec = Math.floor((timeLeft % 60000) / 1000); timerText.innerText = `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`; }
     } else { isGameOver = false; overlay.style.display = 'none'; skinsGrid.innerHTML = ''; }
 }
 document.getElementById('testReviveBtn').addEventListener('click', () => {
     if (score >= 100) {
-        if (confirm(`Вы хотите потратить 100 монет для покупки жизней?\n\nВаш баланс: ${score} 🪙`)) {
-            score -= 100; player.lives = player.maxLives; isGameOver = false; overlay.style.display = 'none'; skinsGrid.innerHTML = ''; localStorage.removeItem('p_player_death_time'); saveProgress(); generateNewLevel();
-        }
+        score -= 100; player.lives = player.maxLives; isGameOver = false; overlay.style.display = 'none'; skinsGrid.innerHTML = ''; localStorage.removeItem('p_player_death_time'); saveProgress(); generateNewLevel();
+    } else { alert(`Недостаточно монет! Нужно: 100 🪙`); }
+});
+function handlePlayerDeath() { player.lives--; saveProgress(); if (player.lives <= 0) { localStorage.setItem('p_player_death_time', Date.now()); saveProgress(); } else { generateNewLevel(); } }
+resizeCanvas(); generateNewLevel(); checkLifeRegen();
+function doJump() { if (!isGameOver && player.onGround) { player.vy = -player.jumpStrength; player.jumpCount = 1; player.onGround = false; } else if (!isGameOver && player.jumpCount < player.maxJumps) { player.vy = -player.jumpStrength; player.jumpCount++; } }
+document.getElementById('btnLeft').addEventListener('touchstart', (e) => { e.preventDefault(); if(!isGameOver) keys['ArrowLeft'] = true; });
+document.getElementById('btnLeft').addEventListener('touchend', (e) => { e.preventDefault(); keys['ArrowLeft'] = false; });
+document.getElementById('btnRight').addEventListener('touchstart', (e) => { e.preventDefault(); if(!isGameOver) keys['ArrowRight'] = true; });
+document.getElementById('btnRight').addEventListener('touchend', (e) => { e.preventDefault(); keys['ArrowRight'] = false; });
+document.getElementById('btnJump').addEventListener('touchstart', (e) => { e.preventDefault(); doJump(); });
+document.getElementById('downloadBtn').addEventListener('click', () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([document.documentElement.outerHTML], { type: 'text/html' })); a.download = 'game.html'; a.click(); });
+document.addEventListener('keydown', (e) => { if (isGameOver) return; if ((e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'ц') && !keys[e.key]) doJump(); if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'ф') keys['ArrowLeft'] = true; if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'в') keys['ArrowRight'] = true; });
+document.addEventListener('keyup', (e) => { if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'ф') keys['ArrowLeft'] = false; if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'в') keys['ArrowRight'] = false; });
+function checkCollision(r1, r2) { return r1.x < r2.x + r2.width && r1.x + r1.width > r2.x && r1.y < r2.y + r2.height && r1.y + r1.height > r2.y; }const REGEN_TIME = 5 * 60 * 1000;
+function checkLifeRegen() {
+    if (player.lives <= 0) {
+        isGameOver = true; overlay.style.display = 'flex';
+        let dTime = localStorage.getItem('p_player_death_time'); if (!dTime) { dTime = Date.now(); localStorage.setItem('p_player_death_time', dTime); } else { dTime = parseInt(dTime); }
+        let timePassed = Date.now() - dTime; let timeLeft = REGEN_TIME - timePassed;
+        const rBtn = document.getElementById('testReviveBtn');
+        if (score < 100) { rBtn.style.opacity = "0.5"; rBtn.innerText = `Нужно 100 🪙 (У вас: ${score})`; } else { rBtn.style.opacity = "1"; rBtn.innerText = "Восстановить за 100 🪙"; }
+        if (skinsGrid.children.length === 0) renderShop();
+        if (timeLeft <= 0) { player.lives = 3; isGameOver = false; overlay.style.display = 'none'; skinsGrid.innerHTML = ''; localStorage.removeItem('p_player_death_time'); saveProgress(); generateNewLevel(); } 
+        else { let min = Math.floor(timeLeft / 60000); let sec = Math.floor((timeLeft % 60000) / 1000); timerText.innerText = `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`; }
+    } else { isGameOver = false; overlay.style.display = 'none'; skinsGrid.innerHTML = ''; }
+}
+document.getElementById('testReviveBtn').addEventListener('click', () => {
+    if (score >= 100) {
+        score -= 100; player.lives = player.maxLives; isGameOver = false; overlay.style.display = 'none'; skinsGrid.innerHTML = ''; localStorage.removeItem('p_player_death_time'); saveProgress(); generateNewLevel();
     } else { alert(`Недостаточно монет! Нужно: 100 🪙`); }
 });
 function handlePlayerDeath() { player.lives--; saveProgress(); if (player.lives <= 0) { localStorage.setItem('p_player_death_time', Date.now()); saveProgress(); } else { generateNewLevel(); } }
@@ -210,31 +234,19 @@ function checkCollision(r1, r2) { return r1.x < r2.x + r2.width && r1.x + r1.wid
         }
         player.x += player.vx; if (player.x < 0) player.x = 0; if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
         player.vy += gravity; player.y += player.vy; player.onGround = false; if (player.invulnerable > 0) player.invulnerable--;
-        
         if (keys['ArrowLeft'] || keys['ArrowRight'] || Math.abs(player.vy) > 0.1) {
             let pColor = player.color; let pType = player.skinId;
-            let pSize = Math.random() * 5 + 3;
-            let vxEff = (Math.random() * 2 - 1) - (keys['ArrowRight'] ? 1.5 : (keys['ArrowLeft'] ? -1.5 : 0));
-            let vyEff = Math.random() * -1 - 0.5; let extraData = {};
-
             if (pType === 'fire') pColor = Math.random() > 0.5 ? '#ff3300' : '#ff9900';
             else if (pType === 'gold') pColor = Math.random() > 0.5 ? '#ffd700' : '#fffb00';
             else if (pType === 'cyan') pColor = Math.random() > 0.5 ? '#00ffff' : '#00aaff';
-            else if (pType === 'ice') { pColor = Math.random() > 0.5 ? '#e3f7ff' : '#a3e5ff'; vyEff = Math.random() * 1 + 0.2; }
-            else if (pType === 'slime') { pColor = '#39ff14'; vyEff = Math.random() * 2 + 1; pSize = Math.random() * 3 + 4; }
-            else if (pType === 'lightning') { pColor = Math.random() > 0.3 ? '#ffffff' : '#7df9ff'; pSize = Math.random() * 2 + 2; extraData.zigzag = true; }
-            else if (pType === 'matter') { pColor = Math.random() > 0.4 ? '#0b001a' : '#ba00ff'; extraData.orbit = true; extraData.angle = Math.random() * Math.PI * 2; extraData.radius = Math.random() * 20 + 10; extraData.centerX = player.x + player.width / 2; extraData.centerY = player.y + player.height / 2; }
-
-            window.playerParticles.push({ x: player.x + player.width / 2 + (Math.random() * 10 - 5), y: player.y + player.height - (Math.random() * 15), size: pSize, color: pColor, alpha: 1, vx: vxEff, vy: vyEff, type: pType, data: extraData });
+            else if (pType === 'ice') pColor = Math.random() > 0.5 ? '#e3f7ff' : '#a3e5ff';
+            else if (pType === 'slime') pColor = '#39ff14';
+            else if (pType === 'lightning') pColor = Math.random() > 0.3 ? '#ffffff' : '#7df9ff';
+            else if (pType === 'matter') pColor = Math.random() > 0.4 ? '#220033' : '#ba00ff';
+            window.playerParticles.push({ x: player.x + player.width / 2 + (Math.random() * 10 - 5), y: player.y + player.height - (Math.random() * 15), size: Math.random() * 4 + 2, color: pColor, alpha: 1, vx: (Math.random() * 2 - 1), vy: Math.random() * -1 - 0.5 });
         }
-        
-        window.playerParticles.forEach((p, index) => {
-            if (p.type === 'lightning') { p.x += p.vx + (Math.random() * 6 - 3); p.y += p.vy + (Math.random() * 6 - 3); p.alpha -= 0.05; } 
-            else if (p.type === 'matter') { p.data.angle += 0.1; p.data.radius -= 0.4; p.x = p.data.centerX + Math.cos(p.data.angle) * p.data.radius; p.y = p.data.centerY + Math.sin(p.data.angle) * p.data.radius; p.alpha -= 0.02; } 
-            else { p.x += p.vx; p.y += p.vy; p.alpha -= 0.03; p.size -= 0.1; }
-            if (p.alpha <= 0 || p.size <= 0 || (p.type === 'matter' && p.data.radius <= 0)) window.playerParticles.splice(index, 1);
-        });
-
+        window.playerParticles.forEach((p, index) => { p.x += p.vx; p.y += p.vy; p.alpha -= 0.04; if (p.alpha <= 0) window.playerParticles.splice(index, 1); });
+        standingOnIce = false; standingOnMud = false;
         for (const plat of platforms) {
             if (!plat.active) continue;
             if (checkCollision(player, plat) && player.vy >= 0 && player.y + player.height - player.vy <= plat.y + 6) {
@@ -257,16 +269,7 @@ function checkCollision(r1, r2) { return r1.x < r2.x + r2.width && r1.x + r1.wid
     for (const coin of coins) { if (!coin.collected) { ctx.fillStyle = currentBiome.coin; ctx.beginPath(); ctx.arc(coin.x + 5, coin.y + 5, 10, 0, Math.PI * 2); ctx.fill(); } }
     for (const enemy of enemies) { ctx.fillStyle = 'red'; ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height); }
     ctx.fillStyle = door.open ? currentBiome.door : '#555'; ctx.fillRect(door.x, door.y, door.width, door.height);
-    
-    if (window.playerParticles) { 
-        window.playerParticles.forEach(p => { 
-            ctx.save(); ctx.globalAlpha = p.alpha; ctx.fillStyle = p.color; 
-            if (p.type === 'ice') { ctx.font = `${p.size * 1.5}px Arial`; ctx.fillText('❄', p.x, p.y); } 
-            else { ctx.fillRect(p.x, p.y, p.size, p.size); }
-            ctx.restore(); 
-        }); 
-    }
-    
+    if (window.playerParticles) { window.playerParticles.forEach(p => { ctx.save(); ctx.globalAlpha = p.alpha; ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, p.size, p.size); ctx.restore(); }); }
     if (!isGameOver && (player.invulnerable === 0 || Math.floor(player.invulnerable / 5) % 2 === 0)) { ctx.fillStyle = player.color; ctx.fillRect(player.x, player.y, player.width, player.height); }
     ctx.fillStyle = 'white'; ctx.font = '20px Arial'; ctx.fillText('Монет: ' + score, 15, 35); ctx.fillText('Уровень: ' + currentLevel, 670, 35);
     let hearts = ''; for(let i=0; i<player.lives; i++) hearts += '❤️ '; ctx.fillText('Жизни: ' + hearts, 15, 65);
