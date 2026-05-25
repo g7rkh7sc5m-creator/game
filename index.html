@@ -3,47 +3,26 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>Хардкорный процедурный платформер v9</title>
+<title>Хардкорный платформер v10</title>
 <style>
     * { box-sizing: border-box; }
-    body {
-        background: #1a1a1a; margin: 0; padding: 0; font-family: Arial, sans-serif; overflow: hidden;
-        width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
-        -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: manipulation;
-    }
+    body { background: #1a1a1a; margin: 0; padding: 0; font-family: Arial, sans-serif; overflow: hidden; width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: manipulation; }
     .game-container { position: relative; max-width: 100%; max-height: 100%; }
     canvas { background: #222; display: block; max-width: 100%; max-height: 100%; box-shadow: 0 0 15px rgba(0,0,0,0.5); }
-    
-    .game-over-overlay {
-        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0, 0, 0, 0.93); display: none; flex-direction: column;
-        justify-content: center; align-items: center; color: white; z-index: 5; padding: 15px;
-    }
+    .game-over-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.93); display: none; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 5; padding: 15px; }
     .game-over-overlay h1 { color: #ff3333; margin: 0 0 5px 0; font-size: 26px; text-shadow: 0 0 10px rgba(255,0,0,0.5); }
     .timer-text { font-size: 18px; font-weight: bold; margin: 5px 0; color: #ffcc00; }
-    .test-revive-btn {
-        background: gold; color: #111; border: none; padding: 10px 20px; 
-        font-weight: bold; border-radius: 5px; cursor: pointer; font-size: 14px; margin-bottom: 15px;
-    }
-    
+    .test-revive-btn { background: gold; color: #111; border: none; padding: 10px 20px; font-weight: bold; border-radius: 5px; cursor: pointer; font-size: 14px; margin-bottom: 15px; }
     .shop-title { font-size: 15px; color: #aaa; margin-bottom: 10px; font-weight: bold; letter-spacing: 1px; }
     .skins-grid { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; max-width: 500px; }
-    .skin-card {
-        background: #2a2a2a; border: 2px solid #444; border-radius: 8px; padding: 6px;
-        display: flex; flex-direction: column; align-items: center; width: 90px; cursor: pointer;
-    }
+    .skin-card { background: #2a2a2a; border: 2px solid #444; border-radius: 8px; padding: 6px; display: flex; flex-direction: column; align-items: center; width: 90px; cursor: pointer; }
     .skin-card.active { border-color: lime; background: #2d3d2d; }
     .skin-preview { width: 20px; height: 30px; margin-bottom: 5px; border-radius: 3px; }
     .skin-name { font-size: 10px; font-weight: bold; margin-bottom: 4px; text-align: center; }
     .skin-price { font-size: 10px; color: #ffcc00; font-weight: bold; }
-
     .mobile-ui { position: absolute; bottom: 30px; left: 0; right: 0; display: flex; justify-content: space-between; padding: 0 30px; width: 100%; pointer-events: none; z-index: 2; }
     .move-group { display: flex; gap: 20px; pointer-events: auto; }
-    .touch-btn {
-        background: rgba(255, 255, 255, 0.2); color: white; border: 2px solid rgba(255, 255, 255, 0.5);
-        width: 70px; height: 70px; border-radius: 50%; font-size: 28px; font-weight: bold;
-        display: flex; justify-content: center; align-items: center; cursor: pointer; pointer-events: auto;
-    }
+    .touch-btn { background: rgba(255, 255, 255, 0.2); color: white; border: 2px solid rgba(255, 255, 255, 0.5); width: 70px; height: 70px; border-radius: 50%; font-size: 28px; font-weight: bold; display: flex; justify-content: center; align-items: center; cursor: pointer; pointer-events: auto; }
     .touch-btn:active { background: rgba(255, 255, 255, 0.5); }
     .jump-btn { width: 85px; height: 85px; background: rgba(0, 255, 0, 0.25); border-color: lime; color: lime; font-size: 18px; }
     .jump-btn:active { background: rgba(0, 255, 0, 0.6); }
@@ -53,26 +32,23 @@
 </head>
 <body>
 <div class="download-container"><button class="download-btn" id="downloadBtn">Скачать (.html)</button></div>
-
 <div class="game-container" id="gameContainer">
     <canvas id="gameCanvas"></canvas>
     <div class="game-over-overlay" id="gameOverOverlay">
         <h1>ЖИЗНИ ЗАКОНЧИЛИСЬ</h1>
         <div class="timer-text" id="timerText">05:00</div>
         <button class="test-revive-btn" id="testReviveBtn">Восстановить за 100 🪙</button>
-        <div class="shop-title">МАГАЗИН СУПЕР-СКИНОВ</div>
+        <div class="shop-title">МАГАЗИН СКИНОВ</div>
         <div class="skins-grid" id="skinsGrid"></div>
     </div>
 </div>
-
 <div class="mobile-ui">
     <div class="move-group"><div class="touch-btn" id="btnLeft">←</div><div class="touch-btn" id="btnRight">→</div></div>
     <div class="touch-btn jump-btn" id="btnJump">ВВЕРХ</div>
 </div><script>
-// ПРИНУДИТЕЛЬНЫЙ СБРОС СТАРОГО КЭША ДО СВЕЖЕЙ ВЕРСИИ V9
-if (!localStorage.getItem('p_game_initialized_v9')) {
+if (localStorage.getItem('p_game_initialized_v9') || !localStorage.getItem('p_game_initialized_v10')) {
     localStorage.clear();
-    localStorage.setItem('p_game_initialized_v9', 'true');
+    localStorage.setItem('p_game_initialized_v10', 'true');
 }
 
 const canvas = document.getElementById('gameCanvas'); const ctx = canvas.getContext('2d');
@@ -85,21 +61,15 @@ function resizeCanvas() {
 }
 window.addEventListener('resize', resizeCanvas); window.addEventListener('orientationchange', resizeCanvas);
 
-// Считывание игрового прогресса
 let savedLives = localStorage.getItem('p_player_lives'); let playerLives = savedLives !== null ? parseInt(savedLives) : 3;
 let savedScore = localStorage.getItem('p_player_score'); let score = savedScore !== null ? parseInt(savedScore) : 0;
 let savedLevel = localStorage.getItem('p_player_level'); let currentLevel = savedLevel !== null ? parseInt(savedLevel) : 1;
 
-// Полный каталог из 9 скинов
 const skinsData = [
-    { id: 'lime', name: 'ЛАЙМ', color: 'lime', price: 0 },
-    { id: 'cyan', name: 'ОКЕАН', color: '#00ffff', price: 30 },
-    { id: 'ice', name: 'ЛЕД КРИСТАЛ', color: '#a3e5ff', price: 50 },
-    { id: 'gold', name: 'ЗОЛОТО', color: '#ffd700', price: 70 },
-    { id: 'slime', name: 'СЛИЗЬ', color: '#39ff14', price: 90 },
-    { id: 'purple', name: 'КИБЕР', color: '#ba00ff', price: 120 },
-    { id: 'lightning', name: 'МОЛНИЯ', color: '#ffffff', price: 160 },
-    { id: 'fire', name: 'ПЛАМЯ', color: '#ff3300', price: 200 },
+    { id: 'lime', name: 'ЛАЙМ', color: 'lime', price: 0 }, { id: 'cyan', name: 'ОКЕАН', color: '#00ffff', price: 30 },
+    { id: 'ice', name: 'ЛЕД КРИСТАЛ', color: '#a3e5ff', price: 50 }, { id: 'gold', name: 'ЗОЛОТО', color: '#ffd700', price: 70 },
+    { id: 'slime', name: 'СЛИЗЬ', color: '#39ff14', price: 90 }, { id: 'purple', name: 'КИБЕР', color: '#ba00ff', price: 120 },
+    { id: 'lightning', name: 'МОЛНИЯ', color: '#ffffff', price: 160 }, { id: 'fire', name: 'ПЛАМЯ', color: '#ff3300', price: 200 },
     { id: 'matter', name: 'МАТЕРИЯ', color: '#440066', price: 250 }
 ];
 
@@ -165,35 +135,6 @@ function renderShop() {
         skinsGrid.appendChild(card);
     });
 }const REGEN_TIME = 5 * 60 * 1000;
-function checkLifeRegen() {
-    if (player.lives <= 0) {
-        isGameOver = true; overlay.style.display = 'flex';
-        let dTime = localStorage.getItem('p_player_death_time'); if (!dTime) { dTime = Date.now(); localStorage.setItem('p_player_death_time', dTime); } else { dTime = parseInt(dTime); }
-        let timePassed = Date.now() - dTime; let timeLeft = REGEN_TIME - timePassed;
-        const rBtn = document.getElementById('testReviveBtn');
-        if (score < 100) { rBtn.style.opacity = "0.5"; rBtn.innerText = `Нужно 100 🪙 (У вас: ${score})`; } else { rBtn.style.opacity = "1"; rBtn.innerText = "Восстановить за 100 🪙"; }
-        if (skinsGrid.children.length === 0) renderShop();
-        if (timeLeft <= 0) { player.lives = 3; isGameOver = false; overlay.style.display = 'none'; skinsGrid.innerHTML = ''; localStorage.removeItem('p_player_death_time'); saveProgress(); generateNewLevel(); } 
-        else { let min = Math.floor(timeLeft / 60000); let sec = Math.floor((timeLeft % 60000) / 1000); timerText.innerText = `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`; }
-    } else { isGameOver = false; overlay.style.display = 'none'; skinsGrid.innerHTML = ''; }
-}
-document.getElementById('testReviveBtn').addEventListener('click', () => {
-    if (score >= 100) {
-        score -= 100; player.lives = player.maxLives; isGameOver = false; overlay.style.display = 'none'; skinsGrid.innerHTML = ''; localStorage.removeItem('p_player_death_time'); saveProgress(); generateNewLevel();
-    } else { alert(`Недостаточно монет! Нужно: 100 🪙`); }
-});
-function handlePlayerDeath() { player.lives--; saveProgress(); if (player.lives <= 0) { localStorage.setItem('p_player_death_time', Date.now()); saveProgress(); } else { generateNewLevel(); } }
-resizeCanvas(); generateNewLevel(); checkLifeRegen();
-function doJump() { if (!isGameOver && player.onGround) { player.vy = -player.jumpStrength; player.jumpCount = 1; player.onGround = false; } else if (!isGameOver && player.jumpCount < player.maxJumps) { player.vy = -player.jumpStrength; player.jumpCount++; } }
-document.getElementById('btnLeft').addEventListener('touchstart', (e) => { e.preventDefault(); if(!isGameOver) keys['ArrowLeft'] = true; });
-document.getElementById('btnLeft').addEventListener('touchend', (e) => { e.preventDefault(); keys['ArrowLeft'] = false; });
-document.getElementById('btnRight').addEventListener('touchstart', (e) => { e.preventDefault(); if(!isGameOver) keys['ArrowRight'] = true; });
-document.getElementById('btnRight').addEventListener('touchend', (e) => { e.preventDefault(); keys['ArrowRight'] = false; });
-document.getElementById('btnJump').addEventListener('touchstart', (e) => { e.preventDefault(); doJump(); });
-document.getElementById('downloadBtn').addEventListener('click', () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([document.documentElement.outerHTML], { type: 'text/html' })); a.download = 'game.html'; a.click(); });
-document.addEventListener('keydown', (e) => { if (isGameOver) return; if ((e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'ц') && !keys[e.key]) doJump(); if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'ф') keys['ArrowLeft'] = true; if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'в') keys['ArrowRight'] = true; });
-document.addEventListener('keyup', (e) => { if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'ф') keys['ArrowLeft'] = false; if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'в') keys['ArrowRight'] = false; });
-function checkCollision(r1, r2) { return r1.x < r2.x + r2.width && r1.x + r1.width > r2.x && r1.y < r2.y + r2.height && r1.y + r1.height > r2.y; }const REGEN_TIME = 5 * 60 * 1000;
 function checkLifeRegen() {
     if (player.lives <= 0) {
         isGameOver = true; overlay.style.display = 'flex';
