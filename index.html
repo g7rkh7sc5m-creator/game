@@ -91,7 +91,26 @@ const biomes = [
     { name: "КОСМИЧЕСКАЯ ТУМАННОСТЬ", bg: "#1a0b2e", plat: "#5c258d", coin: "#e0b0ff", door: "#ff007f" }
 ];
 let currentBiome = biomes;
-function saveProgress() { localStorage.setItem('p_player_lives', player.lives); localStorage.setItem('p_player_score', score); localStorage.setItem('p_player_level', currentLevel); }function generateNewLevel() {
+function saveProgress() { localStorage.setItem('p_player_lives', player.lives); localStorage.setItem('p_player_score', score); localStorage.setItem('p_player_level', currentLevel); }
+}const REGEN_TIME = 5 * 60 * 1000;
+function checkLifeRegen() {
+    if (player.lives <= 0) {
+        isGameOver = true; overlay.style.display = 'flex';
+        let dTime = localStorage.getItem('p_player_death_time'); if (!dTime) { dTime = Date.now(); localStorage.setItem('p_player_death_time', dTime); } else { dTime = parseInt(dTime); }
+        let timePassed = Date.now() - dTime; let timeLeft = REGEN_TIME - timePassed;
+        const rBtn = document.getElementById('testReviveBtn');
+        if (score < 100) { rBtn.style.opacity = "0.5"; rBtn.innerText = `Нужно 100 🪙 (У вас: ${score})`; } else { rBtn.style.opacity = "1"; rBtn.innerText = "Восстановить за 100 🪙"; }
+        if (skinsGrid.children.length === 0) renderShop();
+        if (timeLeft <= 0) { player.lives = 3; isGameOver = false; overlay.style.display = 'none'; skinsGrid.innerHTML = ''; localStorage.removeItem('p_player_death_time'); saveProgress(); generateNewLevel(); } 
+        else { let min = Math.floor(timeLeft / 60000); let sec = Math.floor((timeLeft % 60000) / 1000); timerText.innerText = `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`; }
+    } else { isGameOver = false; overlay.style.display = 'none'; skinsGrid.innerHTML = ''; }
+}
+document.getElementById('testReviveBtn').addEventListener('click', () => {
+    if (score >= 100) {
+        score -= 100; player.lives = player.maxLives; isGameOver = false; overlay.style.display = 'none'; skinsGrid.innerHTML = ''; localStorage.removeItem('p_player_death_time'); saveProgress(); generateNewLevel();
+    } else { alert(`Недостаточно монет! Нужно: 100 🪙`); }
+});
+function handlePlayerDeath() { player.lives--; saveProgress(); if (player.lives <= 0) { localStorage.setItem('p_player_death_time', Date.now()); saveProgress(); } else { generateNewLevel(); } }function generateNewLevel() {
     let biomeIndex = Math.floor((currentLevel - 1) / 3) % biomes.length; currentBiome = biomes[biomeIndex];
     if (player.lives <= 0) player.lives = player.maxLives;
     player.x = 50; player.y = 350; player.vx = 0; player.vy = 0; player.jumpCount = 0; player.invulnerable = 0; window.playerParticles = []; standingOnIce = false; standingOnMud = false;
@@ -138,27 +157,7 @@ function renderShop() {
             }
         });
         skinsGrid.appendChild(card);
-    });
-}const REGEN_TIME = 5 * 60 * 1000;
-function checkLifeRegen() {
-    if (player.lives <= 0) {
-        isGameOver = true; overlay.style.display = 'flex';
-        let dTime = localStorage.getItem('p_player_death_time'); if (!dTime) { dTime = Date.now(); localStorage.setItem('p_player_death_time', dTime); } else { dTime = parseInt(dTime); }
-        let timePassed = Date.now() - dTime; let timeLeft = REGEN_TIME - timePassed;
-        const rBtn = document.getElementById('testReviveBtn');
-        if (score < 100) { rBtn.style.opacity = "0.5"; rBtn.innerText = `Нужно 100 🪙 (У вас: ${score})`; } else { rBtn.style.opacity = "1"; rBtn.innerText = "Восстановить за 100 🪙"; }
-        if (skinsGrid.children.length === 0) renderShop();
-        if (timeLeft <= 0) { player.lives = 3; isGameOver = false; overlay.style.display = 'none'; skinsGrid.innerHTML = ''; localStorage.removeItem('p_player_death_time'); saveProgress(); generateNewLevel(); } 
-        else { let min = Math.floor(timeLeft / 60000); let sec = Math.floor((timeLeft % 60000) / 1000); timerText.innerText = `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`; }
-    } else { isGameOver = false; overlay.style.display = 'none'; skinsGrid.innerHTML = ''; }
-}
-document.getElementById('testReviveBtn').addEventListener('click', () => {
-    if (score >= 100) {
-        score -= 100; player.lives = player.maxLives; isGameOver = false; overlay.style.display = 'none'; skinsGrid.innerHTML = ''; localStorage.removeItem('p_player_death_time'); saveProgress(); generateNewLevel();
-    } else { alert(`Недостаточно монет! Нужно: 100 🪙`); }
-});
-function handlePlayerDeath() { player.lives--; saveProgress(); if (player.lives <= 0) { localStorage.setItem('p_player_death_time', Date.now()); saveProgress(); } else { generateNewLevel(); } }
-resizeCanvas(); generateNewLevel(); checkLifeRegen();
+    });resizeCanvas(); generateNewLevel(); checkLifeRegen();
 function doJump() { if (!isGameOver && player.onGround) { player.vy = -player.jumpStrength; player.jumpCount = 1; player.onGround = false; } else if (!isGameOver && player.jumpCount < player.maxJumps) { player.vy = -player.jumpStrength; player.jumpCount++; } }
 document.getElementById('btnLeft').addEventListener('touchstart', (e) => { e.preventDefault(); if(!isGameOver) keys['ArrowLeft'] = true; });
 document.getElementById('btnLeft').addEventListener('touchend', (e) => { e.preventDefault(); keys['ArrowLeft'] = false; });
