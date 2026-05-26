@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>Хардкорный платформер v10</title>
+<title>Хардкорный процедурный платформер v11</title>
 <style>
     * { box-sizing: border-box; }
     body { background: #1a1a1a; margin: 0; padding: 0; font-family: Arial, sans-serif; overflow: hidden; width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: manipulation; }
@@ -46,9 +46,9 @@
     <div class="move-group"><div class="touch-btn" id="btnLeft">←</div><div class="touch-btn" id="btnRight">→</div></div>
     <div class="touch-btn jump-btn" id="btnJump">ВВЕРХ</div>
 </div><script>
-if (localStorage.getItem('p_game_initialized_v9') || !localStorage.getItem('p_game_initialized_v10')) {
+if (localStorage.getItem('p_game_initialized_v10') || !localStorage.getItem('p_game_initialized_v11')) {
     localStorage.clear();
-    localStorage.setItem('p_game_initialized_v10', 'true');
+    localStorage.setItem('p_game_initialized_v11', 'true');
 }
 
 const canvas = document.getElementById('gameCanvas'); const ctx = canvas.getContext('2d');
@@ -81,10 +81,14 @@ const player = { x: 50, y: 350, width: 30, height: 50, color: currentSkinColor, 
 player.lives = playerLives; const gravity = 0.7; const keys = {}; let platforms = []; let coins = []; let enemies = []; let door = { x: 0, y: 0, width: 40, height: 60, open: false }; let isGameOver = false; window.playerParticles = [];
 let standingOnIce = false; let standingOnMud = false;
 
+// ДОБАВЛЕНО: Полный список из 6 миров со сменой каждые 3 уровня
 const biomes = [
     { name: "КЛАССИЧЕСКИЙ МИР", bg: "#222222", plat: "#8B4513", coin: "gold", door: "#4aeade" },
     { name: "ИЗУМРУДНЫЙ ЛЕС", bg: "#142518", plat: "#2e5c36", coin: "#00FF7F", door: "#ADFF2F" },
-    { name: "НЕОНОВЫЙ КИБЕР", bg: "#120a1c", plat: "#ff0055", coin: "#00FFFF", door: "#ba00ff" }
+    { name: "НЕОНОВЫЙ КИБЕР", bg: "#120a1c", plat: "#ff0055", coin: "#00FFFF", door: "#ba00ff" },
+    { name: "ЛЕДЯНАЯ БЕЗДНА", bg: "#0d1b2a", plat: "#415a77", coin: "#e0f7fa", door: "#00b4d8" },
+    { name: "ВУЛКАНИЧЕСКИЙ АД", bg: "#1a0f0f", plat: "#4a1515", coin: "#ff4d4d", door: "#ff9900" },
+    { name: "КОСМИЧЕСКАЯ ТУМАННОСТЬ", bg: "#1a0b2e", plat: "#5c258d", coin: "#e0b0ff", door: "#ff007f" }
 ];
 let currentBiome = biomes;
 function saveProgress() { localStorage.setItem('p_player_lives', player.lives); localStorage.setItem('p_player_score', score); localStorage.setItem('p_player_level', currentLevel); }function generateNewLevel() {
@@ -108,7 +112,8 @@ function saveProgress() { localStorage.setItem('p_player_lives', player.lives); 
         if (platType !== 'lava') {
             if (Math.random() < 0.6) coins.push({ x: currentX + (platWidth / 2) - 5, y: currentY - 25, size: 10, collected: false });
             if (Math.random() < 0.35 && platWidth >= 110 && platType === 'normal') {
-                let speedBoost = currentLevel >= 4 ? (currentLevel - 3) * 0.15 : 0; let enemySpeed = 1.5 + speedBoost;
+                // ИСПРАВЛЕНО: Медленные враги (0.9) и плавное ускорение (0.05)
+                let speedBoost = currentLevel >= 4 ? (currentLevel - 3) * 0.05 : 0; let enemySpeed = 0.9 + speedBoost;
                 enemies.push({ x: currentX + 10, y: currentY - 30, width: 25, height: 30, speed: (Math.random() > 0.5 ? enemySpeed : -enemySpeed), rangeMin: currentX, rangeMax: currentX + platWidth });
             }
         }
