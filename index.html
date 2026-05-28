@@ -77,15 +77,23 @@ let savedScore = localStorage.getItem('p_player_score'); let score = savedScore 
 let savedLevel = localStorage.getItem('p_player_level'); let currentLevel = savedLevel !== null ? parseInt(savedLevel) : 1;
 
 const skinsData = [
-    { id: 'lime', name: 'ЛАЙМ', color: 'lime', price: 0, desc: 'Без бонусов' },
-    { id: 'ghost', name: 'ПРИЗРАК', color: 'rgba(230,240,255,0.7)', price: 30, desc: 'Иммунитет х2 дольше' },
-    { id: 'cyborg', name: 'КИБОРГ', color: '#ba00ff', price: 50, desc: 'Рывок чаще, прыжок -5%' },
-    { id: 'midas', name: 'МИДАС', color: '#ffd700', price: 80, desc: '+40% монет из сундуков' },
-    { id: 'vulcan', name: 'ВУЛКАН', color: '#ff3300', price: 120, desc: 'Иммун к лаве, скользит' },
-    { id: 'ninja', name: 'НИНДЗЯ', color: '#444444', price: 180, desc: 'Тройной прыжок, макс жизней: 2' }
-];
-
-let purchasedSkins = JSON.parse(localStorage.getItem('p_purchased_skins')) || ['lime'];
+    // Стартовый скин
+    { id: 'lime', name: 'ЛАЙМ', color: 'lime', price: 0, desc: 'Стандартный скин без бонусов' },
+    
+    // Новые скины с пассивными способностями
+    { id: 'ghost', name: 'ПРИЗРАК', color: 'rgba(230,240,255,0.7)', price: 30, desc: 'Иммунитет после урона х2 дольше' },
+    { id: 'cyborg', name: 'КИБОРГ', color: '#ba00ff', price: 50, desc: 'Рывок чаще на 45%, прыжок -5%' },
+    { id: 'midas', name: 'МИДАС', color: '#ffd700', price: 80, desc: '+40% монет при открытии сундуков' },
+    { id: 'vulcan', name: 'ВУЛКАН', color: '#ff3300', price: 120, desc: 'Иммун к лаве, сильнее скользит' },
+    { id: 'ninja', name: 'НИНДЗЯ', color: '#444444', price: 180, desc: 'Тройной прыжок, но макс. жизней: 2' },
+    
+    // Классические скины из прошлых версий
+    { id: 'cyan', name: 'ОКЕАН', color: '#00ffff', price: 20, desc: 'Классический стиль' },
+    { id: 'ice', name: 'ЛЕД КРИСТАЛ', color: '#a3e5ff', price: 40, desc: 'Классический стиль' },
+    { id: 'slime', name: 'СЛИЗЬ', color: '#39ff14', price: 60, desc: 'Классический стиль' },
+    { id: 'lightning', name: 'МОЛНИЯ', color: '#ffffff', price: 100, desc: 'Классический стиль' },
+    { id: 'matter', name: 'МАТЕРИЯ', color: '#440066', price: 150, desc: 'Классический стиль' }
+];let purchasedSkins = JSON.parse(localStorage.getItem('p_purchased_skins')) || ['lime'];
 let currentSkinColor = localStorage.getItem('p_current_skin_color') || 'lime';
 let currentSkinId = localStorage.getItem('p_current_skin_id') || 'lime';
 
