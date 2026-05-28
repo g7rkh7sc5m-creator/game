@@ -99,15 +99,17 @@ let comboTimer = 0;
 let currentEvent = { name: "НЕТ", desc: "Обычные условия" };
 
 const player = { 
-    x: 385, y: 400, width: 26, height: 44, 
-    color: 'lime', // ЖЕСТКО СТАВИМ ЯРКИЙ ЦВЕТ ВМЕСТО ПЕРЕМЕННОЙ
-    skinId: 'lime', // СБРАСЫВАЕМ ИДЕНТИФИКАТОР СКИНА НА СТАРТОВЫЙ
+    x: 385, y: 350, width: 26, height: 44, 
+    color: 'lime', 
+    skinId: 'lime', 
     vx: 0, vy: 0, speed: 5.5, jumpStrength: 13.5, 
     onGround: false, jumpCount: 0, maxJumps: 2, maxLives: 3, invulnerable: 0,
     dashTimer: 0, dashCooldown: 0, dashDir: 0, lastLeftTime: 0, lastRightTime: 0,
     hookActive: false, hookX: 0, hookY: 0, hookLen: 0, hookAngle: 0, hookSpeed: 0,
-    parryActive: 0, parryCooldown: 0
-};lives = playerLives; const gravity = 0.6; const keys = {};
+    parryActive: 0, parryCooldown: 0,
+    lives: 3
+};
+const gravity = 0.6; const keys = {};
 
 let platforms = []; let coins = []; let enemies = []; let chests = []; let bullets = [];
 let door = { x: 0, y: 0, width: 44, height: 64, open: false }; 
@@ -135,7 +137,7 @@ function generateNewLevel() {
     if (player.lives <= 0 || player.lives > maxAllowedLives) player.lives = maxAllowedLives;
     
     player.x = 385; 
-    player.y = 400; 
+    player.y = 350; 
     player.vx = 0; 
     player.vy = 0; 
     player.jumpCount = 0;
@@ -320,7 +322,7 @@ function handleDeath() {
         startReviveTimer();
         updateShop();
     } else {
-        player.x = 385; player.y = 400; player.vx = 0; player.vy = 0;
+        player.x = 385; player.y = 350; player.vx = 0; player.vy = 0;
         player.invulnerable = (player.skinId === 'ghost') ? 120 : 60;
         player.hookActive = false;
     }
@@ -528,7 +530,7 @@ function updateCoinsCheck() {
 
         if (player.y > 500) handleDeath();
 
-        standingOnIce = false; standingOnMud = false; player.onGround = false;        platforms.forEach(p => {
+        standingOnIce = false; standingOnMud = false; player.onGround = false;platforms.forEach(p => {
             ctx.fillStyle = p.color; 
             ctx.fillRect(p.x, p.y, p.width, p.height);
 
@@ -646,10 +648,8 @@ function updateCoinsCheck() {
         }
         if (door.open && checkCollision(player, door)) { currentLevel++; generateNewLevel(); }
 
-        if (player.invulnerable <= 0 || Math.floor(player.invulnerable / 4) % 2 === 0) {
-            ctx.fillStyle = player.color; 
-            ctx.fillRect(player.x, player.y, player.width, player.height);
-        }
+        ctx.fillStyle = player.color; 
+        ctx.fillRect(player.x, player.y, player.width, player.height);
     }
 
     ctx.fillStyle = "white"; ctx.font = "bold 14px Arial";
