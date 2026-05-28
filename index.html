@@ -77,23 +77,20 @@ let savedScore = localStorage.getItem('p_player_score'); let score = savedScore 
 let savedLevel = localStorage.getItem('p_player_level'); let currentLevel = savedLevel !== null ? parseInt(savedLevel) : 1;
 
 const skinsData = [
-    // Стартовый скин
-    { id: 'lime', name: 'ЛАЙМ', color: 'lime', price: 0, desc: 'Стандартный скин без бонусов' },
-    
-    // Новые скины с пассивными способностями
-    { id: 'ghost', name: 'ПРИЗРАК', color: 'rgba(230,240,255,0.7)', price: 30, desc: 'Иммунитет после урона х2 дольше' },
-    { id: 'cyborg', name: 'КИБОРГ', color: '#ba00ff', price: 50, desc: 'Рывок чаще на 45%, прыжок -5%' },
-    { id: 'midas', name: 'МИДАС', color: '#ffd700', price: 80, desc: '+40% монет при открытии сундуков' },
-    { id: 'vulcan', name: 'ВУЛКАН', color: '#ff3300', price: 120, desc: 'Иммун к лаве, сильнее скользит' },
-    { id: 'ninja', name: 'НИНДЗЯ', color: '#444444', price: 180, desc: 'Тройной прыжок, но макс. жизней: 2' },
-    
-    // Классические скины из прошлых версий
+    { id: 'lime', name: 'ЛАЙМ', color: 'lime', price: 0, desc: 'Без бонусов' },
+    { id: 'ghost', name: 'ПРИЗРАК', color: 'rgba(230,240,255,0.7)', price: 30, desc: 'Иммунитет х2 дольше' },
+    { id: 'cyborg', name: 'КИБОРГ', color: '#ba00ff', price: 50, desc: 'Рывок чаще, прыжок -5%' },
+    { id: 'midas', name: 'МИДАС', color: '#ffd700', price: 80, desc: '+40% монет из сундуков' },
+    { id: 'vulcan', name: 'ВУЛКАН', color: '#ff3300', price: 120, desc: 'Иммун к лаве, скользит' },
+    { id: 'ninja', name: 'НИНДЗЯ', color: '#444444', price: 180, desc: 'Тройной прыжок, макс жизней: 2' },
     { id: 'cyan', name: 'ОКЕАН', color: '#00ffff', price: 20, desc: 'Классический стиль' },
     { id: 'ice', name: 'ЛЕД КРИСТАЛ', color: '#a3e5ff', price: 40, desc: 'Классический стиль' },
     { id: 'slime', name: 'СЛИЗЬ', color: '#39ff14', price: 60, desc: 'Классический стиль' },
     { id: 'lightning', name: 'МОЛНИЯ', color: '#ffffff', price: 100, desc: 'Классический стиль' },
     { id: 'matter', name: 'МАТЕРИЯ', color: '#440066', price: 150, desc: 'Классический стиль' }
-];let purchasedSkins = JSON.parse(localStorage.getItem('p_purchased_skins')) || ['lime'];
+];
+
+let purchasedSkins = JSON.parse(localStorage.getItem('p_purchased_skins')) || ['lime'];
 let currentSkinColor = localStorage.getItem('p_current_skin_color') || 'lime';
 let currentSkinId = localStorage.getItem('p_current_skin_id') || 'lime';
 
@@ -105,7 +102,7 @@ let comboTimer = 0;
 let currentEvent = { name: "НЕТ", desc: "Обычные условия" };
 
 const player = { 
-    x: 50, y: 350, width: 26, height: 44, 
+    x: 60, y: 350, width: 26, height: 44, 
     color: currentSkinColor, skinId: currentSkinId, 
     vx: 0, vy: 0, speed: 5.5, jumpStrength: 13.5, 
     onGround: false, jumpCount: 0, maxJumps: 2, maxLives: 3, invulnerable: 0,
@@ -125,13 +122,14 @@ let standingOnIce = false; let standingOnMud = false;const biomes = [
     { name: "ЛЕДЯНАЯ БЕЗДНА", bg: "#060f17", plat: "#2b435c", coin: "#ffffff", door: "#0099ff" },
     { name: "ВУЛКАНИЧЕСКИЙ АД", bg: "#140707", plat: "#3b0f0f", coin: "#ff4500", door: "#ffcc00" }
 ];
-let currentBiome = biomes;
+let currentBiome = biomes[0];
 
 function saveProgress() { 
     localStorage.setItem('p_player_lives', player.lives); 
     localStorage.setItem('p_player_score', score); 
     localStorage.setItem('p_player_level', currentLevel); 
 }
+
 function generateNewLevel() {
     let biomeIndex = Math.floor((currentLevel - 1) / 3) % biomes.length; 
     currentBiome = biomes[biomeIndex];
@@ -139,7 +137,6 @@ function generateNewLevel() {
     let maxAllowedLives = (player.skinId === 'ninja') ? 2 : 3;
     if (player.lives <= 0 || player.lives > maxAllowedLives) player.lives = maxAllowedLives;
     
-    // АНТИ-БАГ: Жесткий спавн игрока на начальной платформе
     player.x = 60; 
     player.y = 350; 
     player.vx = 0; 
@@ -168,7 +165,6 @@ function generateNewLevel() {
         currentEvent = { name: "НЕТ", desc: "Обычные условия выживания" };
     }
 
-    // Первая платформа гарантированно находится под игроком (y: 400, игрок на y: 350)
     platforms = [
         { x: 0, y: 400, width: 200, height: 100, color: currentBiome.plat, type: 'normal' },
         { x: 0, y: 0, width: 20, height: 500, color: '#333', type: 'wall' },
@@ -272,8 +268,7 @@ function startReviveTimer() {
 
 function handleDeath() {
     player.lives--;
-    comboCount = 0; 
-    comboTimer = 0;
+    comboCount = 0; comboTimer = 0;
     if (isTimeSlowActive) {
         isTimeSlowActive = false;
         timeScale = 1.0;
@@ -284,16 +279,14 @@ function handleDeath() {
         startReviveTimer();
         updateShop();
     } else {
-        // АНТИ-БАГ: Точный сброс на безопасную позицию при возрождении
-        player.x = 60; 
-        player.y = 300; 
-        player.vx = 0; 
-        player.vy = 0;
+        player.x = 60; player.y = 300; player.vx = 0; player.vy = 0;
         player.invulnerable = (player.skinId === 'ghost') ? 120 : 60;
         player.hookActive = false;
     }
     saveProgress();
-}document.getElementById('testReviveBtn').onclick = () => {
+}
+
+document.getElementById('testReviveBtn').onclick = () => {
     let maxLives = (player.skinId === 'ninja') ? 2 : 3;
     if (score >= 100) {
         score -= 100; player.lives = maxLives; isGameOver = false; overlay.style.display = 'none'; clearInterval(reviveTimer); generateNewLevel();
@@ -494,7 +487,7 @@ function updateCoinsCheck() {
 
         if (player.y > 500) handleDeath();
 
-        standingOnIce = false; standingOnMud = false; player.onGround = false;  platforms.forEach(p => {
+        standingOnIce = false; standingOnMud = false; player.onGround = false;platforms.forEach(p => {
             ctx.fillStyle = p.color; 
             ctx.fillRect(p.x, p.y, p.width, p.height);
 
