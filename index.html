@@ -130,6 +130,35 @@ function saveProgress() {
     localStorage.setItem('p_player_level', currentLevel); 
 }
 
+function updateShop() {
+    skinsGrid.innerHTML = '';
+    skinsData.forEach(skin => {
+        let isPurchased = purchasedSkins.includes(skin.id);
+        let isActive = currentSkinId === skin.id;
+        let card = document.createElement('div');
+        card.className = `skin-card ${isActive ? 'active' : ''}`;
+        card.innerHTML = `
+            <div class="skin-preview" style="background:${skin.color}"></div>
+            <div class="skin-name">${skin.name}</div>
+            <div class="skin-desc">${skin.desc}</div>
+            <div class="skin-price">${isActive ? 'АКТИВЕН' : (isPurchased ? 'ВЫБРАТЬ' : skin.price + ' 🪙')}</div>
+        `;
+        card.onclick = () => {
+            if (isPurchased) {
+                currentSkinId = skin.id; player.color = skin.color;
+                localStorage.setItem('p_current_skin_id', skin.id); localStorage.setItem('p_current_skin_color', skin.color);
+            } else if (score >= skin.price) {
+                score -= skin.price; purchasedSkins.push(skin.id);
+                currentSkinId = skin.id; player.color = skin.color;
+                localStorage.setItem('p_purchased_skins', JSON.stringify(purchasedSkins));
+                localStorage.setItem('p_current_skin_id', skin.id); localStorage.setItem('p_current_skin_color', skin.color);
+                localStorage.setItem('p_player_score', score);
+            }
+            updateShop();
+        };
+        skinsGrid.appendChild(card);
+    });
+}
 function generateNewLevel() {
     let biomeIndex = Math.floor((currentLevel - 1) / 3) % biomes.length; 
     currentBiome = biomes[biomeIndex];
@@ -217,37 +246,7 @@ function generateNewLevel() {
     }
 
     saveProgress();
-}function updateShop() {
-    skinsGrid.innerHTML = '';
-    skinsData.forEach(skin => {
-        let isPurchased = purchasedSkins.includes(skin.id);
-        let isActive = currentSkinId === skin.id;
-        let card = document.createElement('div');
-        card.className = `skin-card ${isActive ? 'active' : ''}`;
-        card.innerHTML = `
-            <div class="skin-preview" style="background:${skin.color}"></div>
-            <div class="skin-name">${skin.name}</div>
-            <div class="skin-desc">${skin.desc}</div>
-            <div class="skin-price">${isActive ? 'АКТИВЕН' : (isPurchased ? 'ВЫБРАТЬ' : skin.price + ' 🪙')}</div>
-        `;
-        card.onclick = () => {
-            if (isPurchased) {
-                currentSkinId = skin.id; player.color = skin.color;
-                localStorage.setItem('p_current_skin_id', skin.id); localStorage.setItem('p_current_skin_color', skin.color);
-            } else if (score >= skin.price) {
-                score -= skin.price; purchasedSkins.push(skin.id);
-                currentSkinId = skin.id; player.color = skin.color;
-                localStorage.setItem('p_purchased_skins', JSON.stringify(purchasedSkins));
-                localStorage.setItem('p_current_skin_id', skin.id); localStorage.setItem('p_current_skin_color', skin.color);
-                localStorage.setItem('p_player_score', score);
-            }
-            updateShop();
-        };
-        skinsGrid.appendChild(card);
-    });
-}
-
-let reviveTimer = null;
+}let reviveTimer = null;
 let timeLeft = 300;
 function startReviveTimer() {
     timeLeft = 300;
