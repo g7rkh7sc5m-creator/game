@@ -552,9 +552,7 @@ function updateCoinsCheck() {
                     if (p.type === 'ice') standingOnIce = true;
                     if (p.type === 'mud') standingOnMud = true;
                     if (p.type === 'bounce') { player.vy = -player.jumpStrength * 1.25; player.onGround = false; }
-                } else if (player.vy < 0 && player.y - (player.vy * timeScale) >= p.y + p.height - 4) {
-                    player.y = p.y + p.height; player.vy = 0;
-                }
+                } 
             }
         });
 
