@@ -230,8 +230,7 @@ function generateNewLevel() {
             enemies.push({ x: currentX + width/2 - 10, y: currentY - 80, width: 20, height: 20, vx: 1.0, minX: currentX, maxX: currentX + width - 20, baseScaleY: currentY - 80, timeTrack: Math.random() * 10, type: 'drone' });
         } else if (enemyRand < 0.50) {
             enemies.push({ x: currentX + width/2 - 12, y: currentY - 30, width: 24, height: 30, shootCooldown: Math.random() * 90 + 30, type: 'turret' });
-        }
-        
+        }        
         currentX += width + Math.random() * 45 + 50;
         currentY += (Math.random() - 0.5) * 90;
         if (currentY > 410) currentY = 390;
