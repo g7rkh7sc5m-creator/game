@@ -27,7 +27,7 @@
     .jump-btn { width: 85px; height: 85px; background: rgba(0, 255, 0, 0.25); border-color: lime; color: lime; font-size: 18px; }
     .jump-btn:active { background: rgba(0, 255, 0, 0.6); }
     .download-container { position: absolute; top: 10px; right: 10px; z-index: 10; }
-    .download-btn { background-color: lime; color: #111; border: none; padding: 8px 15px; font-size: 14px; font-weight: bold; border-radius: 5px; }
+    .download-btn { background-color: lime; color: #111; border: none; padding: 8px 15px; font-size: 14px; font-weight: bold; border-radius: 5px; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -45,15 +45,40 @@
 <div class="mobile-ui">
     <div class="move-group"><div class="touch-btn" id="btnLeft">←</div><div class="touch-btn" id="btnRight">→</div></div>
     <div class="touch-btn jump-btn" id="btnJump">ВВЕРХ</div>
-</div><script>
-// АНТИ-БАГ: Принудительный сброс старого кэша памяти
-if (!localStorage.getItem('p_game_initialized_v15')) {
-    localStorage.clear();
-    localStorage.setItem('p_game_initialized_v15', 'true');
-}
-
+</div>
+<script><!-- Вставляй этот код сразу после окончания Части 1 -->
 const canvas = document.getElementById('gameCanvas'); const ctx = canvas.getContext('2d');
 const overlay = document.getElementById('gameOverOverlay'); const timerText = document.getElementById('timerText'); const skinsGrid = document.getElementById('skinsGrid');
+
+// Глобальный коэффициент времени (1.0 — норма, 0.4 — замедление)
+let timeScale = 1.0; 
+let isTimeSlowActive = false;
+
+// Добавляем новые сенсорные кнопки (Рывок и Замедление) в мобильный UI
+const mobileUi = document.querySelector('.mobile-ui');
+if (mobileUi) {
+    // Кнопка РЫВОК
+    const dashBtn = document.createElement('div');
+    dashBtn.className = 'touch-btn';
+    dashBtn.id = 'btnDash';
+    dashBtn.style.background = 'rgba(0, 150, 255, 0.25)';
+    dashBtn.style.borderColor = '#00aeff';
+    dashBtn.style.color = '#00aeff';
+    dashBtn.style.fontSize = '14px';
+    dashBtn.innerText = 'РЫВОК';
+    mobileUi.insertBefore(dashBtn, mobileUi.lastChild);
+
+    // Кнопка ВРЕМЯ
+    const slowBtn = document.createElement('div');
+    slowBtn.className = 'touch-btn';
+    slowBtn.id = 'btnSlow';
+    slowBtn.style.background = 'rgba(255, 0, 255, 0.25)';
+    slowBtn.style.borderColor = '#ff00ff';
+    slowBtn.style.color = '#ff00ff';
+    slowBtn.style.fontSize = '14px';
+    slowBtn.innerText = 'ВРЕМЯ';
+    mobileUi.insertBefore(slowBtn, mobileUi.lastChild);
+}
 
 function resizeCanvas() {
     const targetWidth = 800; const targetHeight = 500; const windowWidth = window.innerWidth; const windowHeight = window.innerHeight;
@@ -61,6 +86,13 @@ function resizeCanvas() {
     canvas.width = targetWidth; canvas.height = targetHeight; canvas.style.width = (targetWidth * scale) + 'px'; canvas.style.height = (targetHeight * scale) + 'px';
 }
 window.addEventListener('resize', resizeCanvas); window.addEventListener('orientationchange', resizeCanvas);
+resizeCanvas();
+
+// Анти-баг кэша памяти
+if (!localStorage.getItem('p_game_initialized_v15')) {
+    localStorage.clear();
+    localStorage.setItem('p_game_initialized_v15', 'true');
+}
 
 let savedLives = localStorage.getItem('p_player_lives'); let playerLives = savedLives !== null ? parseInt(savedLives) : 3;
 let savedScore = localStorage.getItem('p_player_score'); let score = savedScore !== null ? parseInt(savedScore) : 0;
@@ -78,190 +110,401 @@ let purchasedSkins = JSON.parse(localStorage.getItem('p_purchased_skins')) || ['
 let currentSkinColor = localStorage.getItem('p_current_skin_color') || 'lime';
 let currentSkinId = localStorage.getItem('p_current_skin_id') || 'lime';
 
-const player = { x: 50, y: 350, width: 30, height: 50, color: currentSkinColor, skinId: currentSkinId, vx: 0, vy: 0, speed: 5.5, jumpStrength: 14, onGround: false, jumpCount: 0, maxJumps: 2, maxLives: 3, invulnerable: 0 };
-player.lives = playerLives; const gravity = 0.7; const keys = {}; let platforms = []; let coins = []; let enemies = []; let chests = []; let door = { x: 0, y: 0, width: 40, height: 60, open: false }; let isGameOver = false; window.playerParticles = [];
+// Физика игрока с поддержкой Рывка и Тайм-слоу
+const player = { 
+    x: 50, y: 350, width: 30, height: 50, 
+    color: currentSkinColor, skinId: currentSkinId, 
+    vx: 0, vy: 0, speed: 5.5, jumpStrength: 13, 
+    onGround: false, jumpCount: 0, maxJumps: 2, maxLives: 3, invulnerable: 0,
+    dashTimer: 0, dashCooldown: 0, dashDir: 0, lastLeftTime: 0, lastRightTime: 0
+};
+player.lives = playerLives; const gravity = 0.6; const keys = {}; let platforms = []; let coins = []; let enemies = []; let chests = []; let door = { x: 0, y: 0, width: 40, height: 60, open: false }; let isGameOver = false; window.playerParticles = [];
 let standingOnIce = false; let standingOnMud = false;
-
+let slowModeTimer = 0; // Для списывания монет во времени
 const biomes = [
-    { name: "КЛАССИЧЕСКИЙ МИР", bg: "#222222", plat: "#8B4513", coin: "gold", door: "#4aeade" },
+    { name: "КЛАССИЧЕСКИЙ МИР", bg: "#1a1a1a", plat: "#8B4513", coin: "gold", door: "#4aeade" },
     { name: "ИЗУМРУДНЫЙ ЛЕС", bg: "#142518", plat: "#2e5c36", coin: "#00FF7F", door: "#ADFF2F" },
     { name: "НЕОНОВЫЙ КИБЕР", bg: "#120a1c", plat: "#ff0055", coin: "#00FFFF", door: "#ba00ff" },
     { name: "ЛЕДЯНАЯ БЕЗДНА", bg: "#0d1b2a", plat: "#415a77", coin: "#e0f7fa", door: "#00b4d8" },
     { name: "ВУЛКАНИЧЕСКИЙ АД", bg: "#1a0f0f", plat: "#4a1515", coin: "#ff4d4d", door: "#ff9900" },
     { name: "КОСМИЧЕСКАЯ ТУМАННОСТЬ", bg: "#1a0b2e", plat: "#5c258d", coin: "#e0b0ff", door: "#ff007f" }
 ];
-let currentBiome = biomes;
-function saveProgress() { localStorage.setItem('p_player_lives', player.lives); localStorage.setItem('p_player_score', score); localStorage.setItem('p_player_level', currentLevel); }function generateNewLevel() {
-    let biomeIndex = Math.floor((currentLevel - 1) / 3) % biomes.length; currentBiome = biomes[biomeIndex];
-    if (player.lives <= 0) player.lives = player.maxLives;
-    player.x = 50; player.y = 350; player.vx = 0; player.vy = 0; player.jumpCount = 0; player.invulnerable = 0; window.playerParticles = []; standingOnIce = false; standingOnMud = false;
-    platforms = [{ x: 0, y: 450, width: 800, height: 50, color: currentBiome.plat, type: 'normal', active: true }]; coins = []; enemies = []; chests = [];
-    let currentX = 100; let currentY = 370;
-    while (currentY > 110) {
-        let platWidth = Math.floor(Math.random() * 60) + 100; let gapX = Math.floor(Math.random() * 80) + 60; 
-        if (Math.random() > 0.5) currentX += gapX; else currentX -= (gapX + platWidth);
-        currentY -= (Math.floor(Math.random() * 40) + 60);
-        if (currentX < 20) currentX = 20; if (currentX + platWidth > canvas.width - 20) currentX = canvas.width - platWidth - 20;
-        let randType = Math.random(); let platType = 'normal'; let platColor = currentBiome.plat;
-        if (randType < 0.12) { platType = 'trampoline'; platColor = '#00ffcc'; } 
-        else if (randType >= 0.12 && randType < 0.24) { platType = 'disappear'; platColor = '#ffcc00'; } 
-        else if (randType >= 0.24 && randType < 0.36) { platType = 'ice'; platColor = '#33ccff'; } 
-        else if (randType >= 0.36 && randType < 0.48) { platType = 'mud'; platColor = '#9933ff'; } 
-        else if (randType >= 0.48 && randType < 0.58) { platType = 'lava'; platColor = '#ff6600'; }
-        platforms.push({ x: currentX, y: currentY, width: platWidth, height: 20, color: platColor, type: platType, touchTime: 0, active: true });
-        if (platType !== 'lava') {
-            let randItem = Math.random();
-            if (randItem < 0.07) {
-                chests.push({ x: currentX + (platWidth / 2) - 15, y: currentY - 25, width: 30, height: 25, opened: false });
-            } else if (randItem < 0.7) {
-                coins.push({ x: currentX + (platWidth / 2) - 5, y: currentY - 25, size: 10, collected: false });
-            }
-            if (Math.random() < 0.35 && platWidth >= 110 && platType === 'normal') {
-                let enemySpeed = 0.9;
-                enemies.push({ x: currentX + 10, y: currentY - 30, width: 25, height: 30, speed: (Math.random() > 0.5 ? enemySpeed : -enemySpeed), rangeMin: currentX, rangeMax: currentX + platWidth });
-            }
-        }
-        currentX = currentX + (Math.random() * 40 - 20);
-    }
-    let highestPlat = platforms[platforms.length - 1]; door.x = highestPlat.x + (highestPlat.width / 2) - 20; door.y = highestPlat.y - 60; door.open = false;
+let currentBiome = biomes[0];
+
+function saveProgress() { 
+    localStorage.setItem('p_player_lives', player.lives); 
+    localStorage.setItem('p_player_score', score); 
+    localStorage.setItem('p_player_level', currentLevel); 
 }
 
-function renderShop() {
+function generateNewLevel() {
+    let biomeIndex = Math.floor((currentLevel - 1) / 3) % biomes.length; 
+    currentBiome = biomes[biomeIndex];
+    if (player.lives <= 0) player.lives = player.maxLives;
+    
+    // Сброс состояния игрока (с сохранением неуязвимости при спавне)
+    player.x = 50; player.y = 350; player.vx = 0; player.vy = 0; player.jumpCount = 0; player.invulnerable = 60;
+    player.dashTimer = 0; player.dashCooldown = 0; player.dashDir = 0;
+    window.playerParticles = []; standingOnIce = false; standingOnMud = false;
+    isGameOver = false; overlay.style.display = 'none';
+
+    // Создаем начальную безопасную зону и невидимые границы карты
+    platforms = [
+        { x: 0, y: 450, width: 200, height: 50, color: currentBiome.plat, type: 'normal' },
+        { x: 0, y: 0, width: 20, height: 500, color: '#333', type: 'wall' },
+        { x: 780, y: 0, width: 20, height: 500, color: '#333', type: 'wall' }
+    ]; 
+    coins = []; enemies = []; chests = [];
+    
+    let currentX = 220; 
+    let currentY = 400;
+    
+    // Алгоритмическая генерация платформ до конца экрана
+    while (currentX < 700) {
+        let width = Math.random() * 60 + 70;
+        let height = 20;
+        let typeRand = Math.random();
+        let type = 'normal';
+        let platColor = currentBiome.plat;
+
+        // Распределяем типы ловушек на платформах
+        if (typeRand < 0.15) { type = 'ice'; platColor = '#a3e5ff'; }
+        else if (typeRand < 0.30) { type = 'mud'; platColor = '#4a3525'; }
+        else if (typeRand < 0.40) { type = 'bounce'; platColor = '#ff007f'; }
+
+        platforms.push({ x: currentX, y: currentY, width: width, height: height, color: platColor, type: type });
+        
+        // Шанс генерации лута и врагов на платформе
+        if (Math.random() < 0.5) coins.push({ x: currentX + width/2, y: currentY - 25, radius: 8, collected: false });
+        if (Math.random() < 0.25) enemies.push({ x: currentX + 10, y: currentY - 25, width: 24, height: 25, vx: 1.5, minX: currentX, maxX: currentX + width - 24, type: 'patrol' });
+        
+        // Рассчитываем прыжковое расстояние до следующей платформы
+        currentX += width + Math.random() * 50 + 40;
+        currentY += (Math.random() - 0.5) * 80;
+        if (currentY > 420) currentY = 400;
+        if (currentY < 150) currentY = 200;
+    }
+
+    // Создаем стабильную финальную платформу с выходом и сундуком
+    platforms.push({ x: 680, y: 350, width: 120, height: 150, color: currentBiome.plat, type: 'normal' });
+    door = { x: 720, y: 290, width: 40, height: 60, open: true };
+    if (Math.random() < 0.4) chests.push({ x: 730, y: 325, width: 25, height: 25, opened: false });
+
+    saveProgress();
+}function updateShop() {
     skinsGrid.innerHTML = '';
     skinsData.forEach(skin => {
-        const card = document.createElement('div'); card.className = 'skin-card'; if (player.color === skin.color) card.classList.add('active');
-        const isPurchased = purchasedSkins.includes(skin.id);
-        card.innerHTML = `<div class="skin-preview" style="background: ${skin.color};"></div><div class="skin-name">${skin.name}</div><div class="skin-price">${isPurchased ? 'НАДЕТЬ' : skin.price + ' 🪙'}</div>`;
-        card.addEventListener('click', () => {
-            if (isPurchased) { player.color = skin.color; player.skinId = skin.id; localStorage.setItem('p_current_skin_color', skin.color); localStorage.setItem('p_current_skin_id', skin.id); renderShop(); } 
-            else {
-                if (score >= skin.price) {
-                    score -= skin.price; purchasedSkins.push(skin.id); player.color = skin.color; player.skinId = skin.id;
-                    localStorage.setItem('p_purchased_skins', JSON.stringify(purchasedSkins)); localStorage.setItem('p_current_skin_color', skin.color); localStorage.setItem('p_current_skin_id', skin.id); saveProgress(); renderShop();
-                } else { alert(`Не хватает монет! Нужно: ${skin.price} 🪙`); }
+        let isPurchased = purchasedSkins.includes(skin.id);
+        let isActive = currentSkinId === skin.id;
+        let card = document.createElement('div');
+        card.className = `skin-card ${isActive ? 'active' : ''}`;
+        card.innerHTML = `
+            <div class="skin-preview" style="background:${skin.color}"></div>
+            <div class="skin-name">${skin.name}</div>
+            <div class="skin-price">${isActive ? 'АКТИВЕН' : (isPurchased ? 'ВЫБРАТЬ' : skin.price + ' 🪙')}</div>
+        `;
+        card.onclick = () => {
+            if (isPurchased) {
+                currentSkinId = skin.id; player.color = skin.color;
+                localStorage.setItem('p_current_skin_id', skin.id); localStorage.setItem('p_current_skin_color', skin.color);
+            } else if (score >= skin.price) {
+                score -= skin.price; purchasedSkins.push(skin.id);
+                currentSkinId = skin.id; player.color = skin.color;
+                localStorage.setItem('p_purchased_skins', JSON.stringify(purchasedSkins));
+                localStorage.setItem('p_current_skin_id', skin.id); localStorage.setItem('p_current_skin_color', skin.color);
+                localStorage.setItem('p_player_score', score);
             }
-        });
+            updateShop();
+        };
         skinsGrid.appendChild(card);
     });
-}const REGEN_TIME = 5 * 60 * 1000;
-function checkLifeRegen() {
-    if (player.lives <= 0) {
-        isGameOver = true; overlay.style.display = 'flex';
-        let dTime = localStorage.getItem('p_player_death_time'); if (!dTime) { dTime = Date.now(); localStorage.setItem('p_player_death_time', dTime); } else { dTime = parseInt(dTime); }
-        let timePassed = Date.now() - dTime; let timeLeft = REGEN_TIME - timePassed;
-        const rBtn = document.getElementById('testReviveBtn');
-        if (score < 100) { rBtn.style.opacity = "0.5"; rBtn.innerText = `Нужно 100 🪙 (У вас: ${score})`; } else { rBtn.style.opacity = "1"; rBtn.innerText = "Восстановить за 100 🪙"; }
-        if (skinsGrid.children.length === 0) renderShop();
-        if (timeLeft <= 0) { player.lives = 3; isGameOver = false; overlay.style.display = 'none'; skinsGrid.innerHTML = ''; localStorage.removeItem('p_player_death_time'); saveProgress(); generateNewLevel(); } 
-        else { let min = Math.floor(timeLeft / 60000); let sec = Math.floor((timeLeft % 60000) / 1000); timerText.innerText = `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`; }
-    } else { isGameOver = false; overlay.style.display = 'none'; skinsGrid.innerHTML = ''; }
 }
-document.getElementById('testReviveBtn').addEventListener('click', () => {
+
+let reviveTimer = null;
+let timeLeft = 300;
+function startReviveTimer() {
+    timeLeft = 300;
+    clearInterval(reviveTimer);
+    reviveTimer = setInterval(() => {
+        // Учет замедления времени на таймер UI не влияет
+        timeLeft--;
+        let m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+        let s = (timeLeft % 60).toString().padStart(2, '0');
+        timerText.textContent = `${m}:${s}`;
+        if (timeLeft <= 0) {
+            clearInterval(reviveTimer);
+            // Если время вышло, принудительно обнуляем прогресс уровней
+            currentLevel = 1;
+            score = 0;
+            player.lives = 3;
+            generateNewLevel();
+        }
+    }, 1000);
+}
+
+function handleDeath() {
+    player.lives--;
+    // Если активен слоу-моушн, принудительно выключаем его при смерти
+    if (isTimeSlowActive) {
+        isTimeSlowActive = false;
+        timeScale = 1.0;
+    }
+    if (player.lives <= 0) {
+        isGameOver = true;
+        overlay.style.display = 'flex';
+        startReviveTimer();
+        updateShop();
+    } else {
+        player.x = 50; player.y = 350; player.vx = 0; player.vy = 0; player.invulnerable = 60;
+    }
+    saveProgress();
+}
+
+document.getElementById('testReviveBtn').onclick = () => {
     if (score >= 100) {
-        score -= 100; player.lives = player.maxLives; isGameOver = false; overlay.style.display = 'none'; skinsGrid.innerHTML = ''; localStorage.removeItem('p_player_death_time'); saveProgress(); generateNewLevel();
-    } else { alert(`Недостаточно монет! Нужно: 100 🪙`); }
+        score -= 100; player.lives = 3; isGameOver = false; overlay.style.display = 'none'; clearInterval(reviveTimer); generateNewLevel();
+    } else { alert("Недостаточно монет для воскрешения!"); }
+};window.addEventListener('keydown', e => { 
+    keys[e.code] = true; 
+    
+    // Прыжок
+    if (e.code === 'KeyW' || e.code === 'Space' || e.code === 'ArrowUp') {
+        jump(); 
+    }
+    
+    // Активация рывка (Dash) по нажатию Shift
+    if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
+        executeDash();
+    }
+    
+    // Переключение замедления времени (Time Slow) по нажатию CapsLock
+    if (e.code === 'CapsLock') {
+        toggleTimeSlow();
+    }
 });
-function handlePlayerDeath() { player.lives--; saveProgress(); if (player.lives <= 0) { localStorage.setItem('p_player_death_time', Date.now()); saveProgress(); } else { generateNewLevel(); } }
-resizeCanvas(); generateNewLevel(); checkLifeRegen();
-function doJump() { if (!isGameOver && player.onGround) { player.vy = -player.jumpStrength; player.jumpCount = 1; player.onGround = false; } else if (!isGameOver && player.jumpCount < player.maxJumps) { player.vy = -player.jumpStrength; player.jumpCount++; } }
-document.getElementById('btnLeft').addEventListener('touchstart', (e) => { e.preventDefault(); if(!isGameOver) keys['ArrowLeft'] = true; });
-document.getElementById('btnLeft').addEventListener('touchend', (e) => { e.preventDefault(); keys['ArrowLeft'] = false; });
-document.getElementById('btnRight').addEventListener('touchstart', (e) => { e.preventDefault(); if(!isGameOver) keys['ArrowRight'] = true; });
-document.getElementById('btnRight').addEventListener('touchend', (e) => { e.preventDefault(); keys['ArrowRight'] = false; });
-document.getElementById('btnJump').addEventListener('touchstart', (e) => { e.preventDefault(); doJump(); });
-document.getElementById('downloadBtn').addEventListener('click', () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([document.documentElement.outerHTML], { type: 'text/html' })); a.download = 'game.html'; a.click(); });
-document.addEventListener('keydown', (e) => { if (isGameOver) return; if ((e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'ц') && !keys[e.key]) doJump(); if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'ф') keys['ArrowLeft'] = true; if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'в') keys['ArrowRight'] = true; });
-document.addEventListener('keyup', (e) => { if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'ф') keys['ArrowLeft'] = false; if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'в') keys['ArrowRight'] = false; });
-function checkCollision(r1, r2) { return r1.x < r2.x + r2.width && r1.x + r1.width > r2.x && r1.y < r2.y + r2.height && r1.y + r1.height > r2.y; }function gameLoop() {
-    checkLifeRegen();
+
+window.addEventListener('keyup', e => {
+    // Механика двойного нажатия стрелок для рывка на клавиатуре
+    if (e.code === 'ArrowLeft' || e.code === 'KeyA') {
+        let now = performance.now();
+        if (now - player.lastLeftTime < 250) executeDash(-1);
+        player.lastLeftTime = now;
+    }
+    if (e.code === 'ArrowRight' || e.code === 'KeyD') {
+        let now = performance.now();
+        if (now - player.lastRightTime < 250) executeDash(1);
+        player.lastRightTime = now;
+    }
+    keys[e.code] = false;
+});
+
+// Настройка мобильного тач-интерфейса
+const bLeft = document.getElementById('btnLeft'); 
+const bRight = document.getElementById('btnRight'); 
+const bJump = document.getElementById('btnJump');
+const bDash = document.getElementById('btnDash');
+const bSlow = document.getElementById('btnSlow');
+
+if (bLeft) {
+    bLeft.ontouchstart = (e) => { e.preventDefault(); keys['ArrowLeft'] = true; }; 
+    bLeft.ontouchend = () => keys['ArrowLeft'] = false;
+}
+if (bRight) {
+    bRight.ontouchstart = (e) => { e.preventDefault(); keys['ArrowRight'] = true; }; 
+    bRight.ontouchend = () => keys['ArrowRight'] = false;
+}
+if (bJump) {
+    bJump.ontouchstart = (e) => { e.preventDefault(); jump(); };
+}
+if (bDash) {
+    bDash.ontouchstart = (e) => { e.preventDefault(); executeDash(); };
+}
+if (bSlow) {
+    bSlow.ontouchstart = (e) => { e.preventDefault(); toggleTimeSlow(); };
+}
+
+function jump() {
+    if (player.onGround || player.jumpCount < player.maxJumps) {
+        // Сила прыжка не уменьшается в слоу-мо, чтобы сохранить управляемость
+        player.vy = -player.jumpStrength; 
+        player.jumpCount++; 
+        player.onGround = false;
+    }
+}
+
+function executeDash(forcedDir = 0) {
+    if (player.dashCooldown > 0 || isGameOver) return;
+    
+    let dir = forcedDir;
+    if (dir === 0) {
+        if (keys['ArrowLeft'] || keys['KeyA']) dir = -1;
+        else if (keys['ArrowRight'] || keys['KeyD']) dir = 1;
+        else dir = (player.vx >= 0) ? 1 : -1; // Направление по умолчанию
+    }
+    
+    player.dashTimer = 10;     // Длительность рывка в кадрах
+    player.dashCooldown = 45;  // Перезарядка рывка
+    player.dashDir = dir;
+    player.vy = 0;             // Обнуляем вертикальную скорость для зависания
+}
+
+function toggleTimeSlow() {
+    if (isGameOver) return;
+    if (!isTimeSlowActive) {
+        if (score >= 1) {
+            isTimeSlowActive = true;
+            timeScale = 0.4;
+            if (bSlow) bSlow.style.background = 'rgba(255, 0, 255, 0.6)';
+        }
+    } else {
+        isTimeSlowActive = false;
+        timeScale = 1.0;
+        if (bSlow) bSlow.style.background = 'rgba(255, 0, 255, 0.25)';
+    }
+}
+
+function checkCollision(r1, r2) {
+    return r1.x < r2.x + r2.width && r1.x + r1.width > r2.x && r1.y < r2.y + r2.height && r1.y + r1.height > r2.y;
+}function gameLoop() {
+    ctx.fillStyle = currentBiome.bg; ctx.clearRect(0,0,800,500); ctx.fillRect(0,0,800,500);
+
     if (!isGameOver) {
-        let currentMaxSpeed = standingOnMud ? player.speed * 0.4 : player.speed;
-        if (standingOnIce) {
-            if (keys['ArrowLeft']) player.vx -= 0.35; else if (keys['ArrowRight']) player.vx += 0.35;
-            player.vx *= 0.95; if (player.vx > currentMaxSpeed) player.vx = currentMaxSpeed; if (player.vx < -currentMaxSpeed) player.vx = -currentMaxSpeed;
+        // Логика списания монет за использование замедления времени (1 монета в секунду)
+        if (isTimeSlowActive) {
+            slowModeTimer += 1;
+            if (slowModeTimer >= 60) { // Примерно раз в секунду при 60 FPS
+                if (score > 0) {
+                    score--;
+                    saveProgress();
+                } else {
+                    toggleTimeSlow(); // Выключаем, если монеты кончились
+                }
+                slowModeTimer = 0;
+            }
+        }
+
+        // Применяем таймскейл к кулдаунам
+        if (player.dashCooldown > 0) player.dashCooldown -= timeScale;
+
+        // Расчет перемещения игрока с учетом рывка (Dash) или обычной ходьбы
+        if (player.dashTimer > 0) {
+            player.vx = player.dashDir * 14; // Скорость рывка фиксирована
+            player.vy = 0; // Игрок не падает во время рывка
+            player.dashTimer -= timeScale;
         } else {
-            if (keys['ArrowLeft']) player.vx = -currentMaxSpeed; else if (keys['ArrowRight']) player.vx = currentMaxSpeed; else player.vx = 0;
-        }
-        player.x += player.vx; if (player.x < 0) player.x = 0; if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
-        player.vy += gravity; player.y += player.vy; player.onGround = false; if (player.invulnerable > 0) player.invulnerable--;
-        
-        // РАСЧЕТ УНИКАЛЬНЫХ СУПЕР-ЭФФЕКТОВ ДЛЯ КАЖДОГО СКИНА
-        if (keys['ArrowLeft'] || keys['ArrowRight'] || Math.abs(player.vy) > 0.1) {
-            let pColor = player.color; let pType = player.skinId;
-            let pSize = Math.random() * 5 + 3;
-            let vxEff = (Math.random() * 2 - 1) - (keys['ArrowRight'] ? 1.5 : (keys['ArrowLeft'] ? -1.5 : 0));
-            let vyEff = Math.random() * -1 - 0.5; let extraData = {};
+            // Обычное движение
+            let accel = standingOnIce ? 0.15 : (standingOnMud ? 0.05 : 0.6);
+            let friction = standingOnIce ? 0.98 : (standingOnMud ? 0.7 : 0.82);
+            let maxSpd = standingOnMud ? 2.5 : player.speed;
 
-            if (pType === 'fire') pColor = Math.random() > 0.5 ? '#ff3300' : '#ff9900';
-            else if (pType === 'gold') pColor = Math.random() > 0.5 ? '#ffd700' : '#fffb00';
-            else if (pType === 'cyan') pColor = Math.random() > 0.5 ? '#00ffff' : '#00aaff';
-            else if (pType === 'ice') { pColor = Math.random() > 0.5 ? '#e3f7ff' : '#a3e5ff'; vyEff = Math.random() * 1 + 0.2; } // Падают вниз
-            else if (pType === 'slime') { pColor = '#39ff14'; vyEff = Math.random() * 2 + 1; pSize = Math.random() * 3 + 4; } // Тяжелые капли
-            else if (pType === 'lightning') { pColor = Math.random() > 0.3 ? '#ffffff' : '#7df9ff'; pSize = Math.random() * 2 + 2; extraData.zigzag = true; }
-            else if (pType === 'matter') { pColor = Math.random() > 0.4 ? '#220033' : '#ba00ff'; extraData.orbit = true; extraData.angle = Math.random() * Math.PI * 2; extraData.radius = Math.random() * 20 + 10; extraData.centerX = player.x + player.width / 2; extraData.centerY = player.y + player.height / 2; }
+            if (keys['ArrowLeft'] || keys['KeyA']) player.vx -= accel * timeScale;
+            else if (keys['ArrowRight'] || keys['KeyD']) player.vx += accel * timeScale;
+            else player.vx *= Math.pow(friction, timeScale);
 
-            window.playerParticles.push({ x: player.x + player.width / 2 + (Math.random() * 10 - 5), y: player.y + player.height - (Math.random() * 15), size: pSize, color: pColor, alpha: 1, vx: vxEff, vy: vyEff, type: pType, data: extraData });
+            if (player.vx > maxSpd) player.vx = maxSpd; 
+            if (player.vx < -maxSpd) player.vx = -maxSpd;
+
+            player.vy += gravity * timeScale;
         }
-        
-        // Математика индивидуального поведения каждой искры в воздухе
-        window.playerParticles.forEach((p, index) => {
-            if (p.type === 'lightning') { p.x += p.vx + (Math.random() * 6 - 3); p.y += p.vy + (Math.random() * 6 - 3); p.alpha -= 0.06; } 
-            else if (p.type === 'matter') { p.data.angle += 0.12; p.data.radius -= 0.4; p.x = p.data.centerX + Math.cos(p.data.angle) * p.data.radius; p.y = p.data.centerY + Math.sin(p.data.angle) * p.data.radius; p.alpha -= 0.02; } 
-            else { p.x += p.vx; p.y += p.vy; p.alpha -= 0.03; p.size -= 0.1; }
-            if (p.alpha <= 0 || p.size <= 0 || (p.type === 'matter' && p.data.radius <= 0)) window.playerParticles.splice(index, 1);
+
+        // Применяем вычисленные скорости к координатам персонажа
+        player.x += player.vx * timeScale; 
+        player.y += player.vy * timeScale;
+
+        if (player.invulnerable > 0) player.invulnerable -= timeScale;
+        if (player.y > 500) handleDeath();
+
+        standingOnIce = false; standingOnMud = false; player.onGround = false;
+
+        // Физика платформ и столкновений
+        platforms.forEach(p => {
+            ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, p.width, p.height);
+            if (player.vx > 0 && checkCollision(player, p) && player.x + player.width - (player.vx * timeScale) <= p.x) { player.x = p.x - player.width; player.vx = 0; }
+            if (player.vx < 0 && checkCollision(player, p) && player.x - (player.vx * timeScale) >= p.x + p.width) { player.x = p.x + p.width; player.vx = 0; }
+            
+            if (checkCollision(player, p)) {
+                if (player.vy > 0 && player.y + player.height - (player.vy * timeScale) <= p.y + 4) {
+                    player.y = p.y - player.height; player.vy = 0; player.onGround = true; player.jumpCount = 0;
+                    if (p.type === 'ice') standingOnIce = true;
+                    if (p.type === 'mud') standingOnMud = true;
+                    if (p.type === 'bounce') { player.vy = -player.jumpStrength * 1.3; player.onGround = false; }
+                } else if (player.vy < 0 && player.y - (player.vy * timeScale) >= p.y + p.height - 4) {
+                    player.y = p.y + p.height; player.vy = 0;
+                }
+            }
         });
 
-        standingOnIce = false; standingOnMud = false;
-        for (const plat of platforms) {
-            if (!plat.active) continue;
-            if (checkCollision(player, plat) && player.vy >= 0 && player.y + player.height - player.vy <= plat.y + 6) {
-                player.y = plat.y - player.height; player.vy = 0; player.onGround = true; player.jumpCount = 0;
-                if (plat.type === 'ice') standingOnIce = true; if (plat.type === 'mud') standingOnMud = true;
-                if (plat.type === 'trampoline') { player.vy = -20; player.onGround = false; }
-                if (plat.type === 'disappear' && plat.touchTime === 0) plat.touchTime = Date.now();
-                if (plat.type === 'lava' && player.invulnerable === 0) { player.invulnerable = 60; player.vy = -12; player.onGround = false; handlePlayerDeath(); }
+        // Сбор монет
+        coins.forEach(c => {
+            if (!c.collected) {
+                ctx.fillStyle = currentBiome.coin; ctx.beginPath(); ctx.arc(c.x, c.y, c.radius, 0, Math.PI*2); ctx.fill();
+                if (Math.abs(player.x + player.width/2 - c.x) < player.width/2 + c.radius && Math.abs(player.y + player.height/2 - c.y) < player.height/2 + c.radius) {
+                    c.collected = true; score += 5; saveProgress();
+                }
             }
-            if (plat.type === 'disappear' && plat.touchTime > 0) { if (Date.now() - plat.touchTime > 800) { plat.active = false; if (player.onGround && player.y + player.height === plat.y) player.onGround = false; } }
-        }
-        for (const enemy of enemies) { enemy.x += enemy.speed; if (enemy.x <= enemy.rangeMin || enemy.x + enemy.width >= enemy.rangeMax) enemy.speed = -enemy.speed; if (checkCollision(player, enemy)) { if (player.invulnerable === 0) { player.invulnerable = 90; handlePlayerDeath(); } } }
-        if (player.y + player.height > canvas.height) handlePlayerDeath();
-        let allCollected = true;
-        for (const coin of coins) { if (!coin.collected) { allCollected = false; if (checkCollision(player, {x: coin.x, y: coin.y, width: coin.size, height: coin.size})) { coin.collected = true; score++; saveProgress(); } } }
-        
-        for (const chest of chests) {
-            if (!chest.opened && checkCollision(player, chest)) {
-                chest.opened = true; let prize = Math.random();
-                if (prize < 0.4) { score += 60; alert("🎁 ЭПИЧЕСКИЙ СУНДУК!\nВам улыбнулась редкая удача: +60 монет! 🪙"); } 
-                else if (prize < 0.75) { player.lives = player.maxLives; alert("🎁 ЭПИЧЕСКИЙ СУНДУК!\nМагия древнего сундука полностью излечила вас! ❤️"); } 
-                else { alert("🎁 ЛОВУШКА ДРЕВНИХ!\nСундук охранял монстр! Берегись!"); enemies.push({ x: chest.x, y: chest.y - 10, width: 25, height: 30, speed: 0.9, rangeMin: chest.x - 50, rangeMax: chest.x + 80 }); }
-                saveProgress();
+        });
+
+        // Открытие сундуков
+        chests.forEach(ch => {
+            ctx.fillStyle = ch.opened ? '#8B5A2B' : '#CD853F'; ctx.fillRect(ch.x, ch.y, ch.width, ch.height);
+            if (!ch.opened && checkCollision(player, ch)) { ch.opened = true; score += 25; saveProgress(); }
+        });
+
+        // Логика патрулирующих врагов
+        enemies.forEach(e => {
+            e.x += e.vx * timeScale; 
+            if (e.x < e.minX || e.x > e.maxX) e.vx *= -1;
+            ctx.fillStyle = '#ff3333'; ctx.fillRect(e.x, e.y, e.width, e.height);
+            if (checkCollision(player, e)) {
+                if (player.vy > 0 && player.y + player.height - (player.vy * timeScale) <= e.y + 4) {
+                    player.vy = -8; enemies = enemies.filter(item => item !== e); score += 15;
+                } else if (player.invulnerable <= 0) { handleDeath(); }
             }
-            if (!chest.opened) allCollected = false;
+        });
+
+        // Дверь перехода на следующий уровень
+        ctx.fillStyle = door.open ? currentBiome.door : '#555'; ctx.fillRect(door.x, door.y, door.width, door.height);
+        if (door.open && checkCollision(player, door)) { currentLevel++; generateNewLevel(); }
+
+        // Отрисовка игрока (мигание при неуязвимости)
+        if (player.invulnerable <= 0 || Math.floor(player.invulnerable / 4) % 2 === 0) {
+            ctx.fillStyle = player.color; ctx.fillRect(player.x, player.y, player.width, player.height);
         }
-        if (allCollected) door.open = true; if (door.open && checkCollision(player, door)) { currentLevel++; saveProgress(); generateNewLevel(); }
     }
-    ctx.fillStyle = currentBiome.bg; ctx.fillRect(0, 0, canvas.width, canvas.height);
-    for (const plat of platforms) { if (!plat.active) continue; ctx.fillStyle = plat.color; if (plat.type === 'disappear' && plat.touchTime > 0 && Math.floor(Date.now() / 100) % 2 === 0) ctx.fillStyle = 'rgba(255,204,0,0.4)'; ctx.fillRect(plat.x, plat.y, plat.width, plat.height); }
-    for (const coin of coins) { if (!coin.collected) { ctx.fillStyle = currentBiome.coin; ctx.beginPath(); ctx.arc(coin.x + 5, coin.y + 5, 10, 0, Math.PI * 2); ctx.fill(); } }
-    for (const chest of chests) { if (!chest.opened) { ctx.fillStyle = '#00ffff'; ctx.fillRect(chest.x, chest.y, chest.width, chest.height); ctx.fillStyle = '#fff'; ctx.font = '10px Arial'; ctx.fillText('💎', chest.x + 8, chest.y + 16); } }
-    for (const enemy of enemies) { ctx.fillStyle = 'red'; ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height); }
-    ctx.fillStyle = door.open ? currentBiome.door : '#555'; ctx.fillRect(door.x, door.y, door.width, door.height);
+
+    // Игровой интерфейс (HUD)
+    ctx.fillStyle = "white"; ctx.font = "bold 16px Arial";
+    ctx.fillText(`УРОВЕНЬ: ${currentLevel} (${currentBiome.name})`, 20, 30);
+    ctx.fillText(`МОНЕТЫ: ${score} 🪙`, 20, 55);
+    ctx.fillText(`ЖИЗНИ: ${'❤️'.repeat(Math.max(0, player.lives))}`, 20, 80);
     
-    // ОТРИСОВКА СУПЕР-ЧАСТИЦ ДЛЯ СКИНОВ
-    if (window.playerParticles) { 
-        window.playerParticles.forEach(p => { 
-            ctx.save(); ctx.globalAlpha = p.alpha; ctx.fillStyle = p.color; 
-            if (p.type === 'ice') { ctx.font = `${p.size * 1.5}px Arial`; ctx.fillText('❄', p.x, p.y); } 
-            else { ctx.fillRect(p.x, p.y, p.size, p.size); }
-            ctx.restore(); 
-        }); 
+    // Индикатор активных спецспособностей
+    if (isTimeSlowActive) {
+        ctx.fillStyle = "#ff00ff";
+        ctx.fillText("ЗАМЕДЛЕНИЕ ВРЕМЕНИ АКТИВНО (-1🪙/сек)", 20, 110);
+    } else if (player.dashCooldown > 0) {
+        ctx.fillStyle = "#aaa";
+        ctx.fillText(`ПЕРЕЗАРЯДКА РЫВКА: ${Math.ceil(player.dashCooldown / 60)}с`, 20, 110);
+    } else {
+        ctx.fillStyle = "#00aeff";
+        ctx.fillText("РЫВОК ГОТОВ (Shift / Двойной тап)", 20, 110);
     }
-    
-    if (!isGameOver && (player.invulnerable === 0 || Math.floor(player.invulnerable / 5) % 2 === 0)) { ctx.fillStyle = player.color; ctx.fillRect(player.x, player.y, player.width, player.height); }
-    ctx.fillStyle = 'white'; ctx.font = '20px Arial'; ctx.fillText('Монет: ' + score, 15, 35); ctx.fillText('Уровень: ' + currentLevel, 670, 35);
-    let hearts = ''; for(let i=0; i<player.lives; i++) hearts += '❤️ '; ctx.fillText('Жизни: ' + hearts, 15, 65);
+
     requestAnimationFrame(gameLoop);
 }
+
+// Функция сборки и скачивания полноценного HTML-файла игры
+document.getElementById('downloadBtn').onclick = () => {
+    const htmlContent = document.documentElement.outerHTML;
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'hardcore_platformer_v15_final.html';
+    a.click();
+};
+
+// Запуск игрового процесса
+generateNewLevel();
 gameLoop();
 </script>
 </body>
