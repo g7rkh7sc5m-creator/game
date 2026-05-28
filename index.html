@@ -472,12 +472,12 @@ function updateCoinsCheck() {
             }
         }
 
-        if (player.dashCooldown > 0) player.dashCooldown -= timeScale;
-        if (player.parryCooldown > 0) player.parryCooldown -= timeScale;
-        if (player.parryActive > 0) player.parryActive -= timeScale;
+        if (player.dashCooldown > 0) player.dashCooldown--;
+        if (player.parryCooldown > 0) player.parryCooldown--;
+        if (player.parryActive > 0) player.parryActive--;
 
         if (comboTimer > 0) {
-            comboTimer -= timeScale;
+            comboTimer--;
             if (comboTimer <= 0) { comboCount = 0; }
         }
 
@@ -490,9 +490,9 @@ function updateCoinsCheck() {
             if (keys['ArrowLeft'] || keys['KeyA']) angleAcc -= 0.003;
             if (keys['ArrowRight'] || keys['KeyD']) angleAcc += 0.003;
             
-            player.hookSpeed += angleAcc * timeScale;
-            player.hookSpeed *= Math.pow(0.992, timeScale);
-            player.hookAngle += player.hookSpeed * timeScale;
+            player.hookSpeed += angleAcc;
+            player.hookSpeed *= 0.992;
+            player.hookAngle += player.hookSpeed;
             
             player.x = player.hookX + Math.cos(player.hookAngle) * player.hookLen - player.width / 2;
             player.y = player.hookY + Math.sin(player.hookAngle) * player.hookLen - player.height / 2;
@@ -502,7 +502,7 @@ function updateCoinsCheck() {
         else if (player.dashTimer > 0) {
             player.vx = player.dashDir * 13;
             player.vy = 0;
-            player.dashTimer -= timeScale;
+            player.dashTimer--;
         } 
         else {
             let accel = standingOnIce ? 0.12 : (standingOnMud ? 0.04 : 0.55);
@@ -513,29 +513,30 @@ function updateCoinsCheck() {
                 accel = 0.05; friction = 0.997;
             }
 
-            if (keys['ArrowLeft'] || keys['KeyA']) player.vx -= accel * timeScale;
-            else if (keys['ArrowRight'] || keys['KeyD']) player.vx += accel * timeScale;
-            else player.vx *= Math.pow(friction, timeScale);
+            if (keys['ArrowLeft'] || keys['KeyA']) player.vx -= accel;
+            else if (keys['ArrowRight'] || keys['KeyD']) player.vx += accel;
+            else player.vx *= friction;
 
             if (player.vx > maxSpd) player.vx = maxSpd; 
             if (player.vx < -maxSpd) player.vx = -maxSpd;
 
-            player.vy += gravity * timeScale;
+            player.vy += gravity;
         }
 
         if (!player.hookActive) {
-            player.x += player.vx * timeScale; 
-            player.y += player.vy * timeScale;
+            player.x += player.vx; 
+            player.y += player.vy;
         }
 
+        if (player.invulnerable > 0) player.invulnerable--;
         if (player.y > 500) handleDeath();
 
-        standingOnIce = false; standingOnMud = false; player.onGround = false;platforms.forEach(p => {
+        standingOnIce = false; standingOnMud = false; player.onGround = false; platforms.forEach(p => {
             ctx.fillStyle = p.color; 
             ctx.fillRect(p.x, p.y, p.width, p.height);
 
             if (p.type === 'break' && checkCollision(player, p) && player.vy > 0) {
-                p.timer -= timeScale;
+                p.timer--;
                 if (p.timer <= 0) {
                     platforms = platforms.filter(item => item !== p);
                     return;
@@ -543,16 +544,16 @@ function updateCoinsCheck() {
                 p.color = Math.floor(p.timer) % 6 < 3 ? '#ff3300' : '#ff9900';
             }
 
-            if (player.vx > 0 && checkCollision(player, p) && player.x + player.width - (player.vx * timeScale) <= p.x) { player.x = p.x - player.width; player.vx = 0; }
-            if (player.vx < 0 && checkCollision(player, p) && player.x - (player.vx * timeScale) >= p.x + p.width) { player.x = p.x + p.width; player.vx = 0; }
+            if (player.vx > 0 && checkCollision(player, p) && player.x + player.width - player.vx <= p.x) { player.x = p.x - player.width; player.vx = 0; }
+            if (player.vx < 0 && checkCollision(player, p) && player.x - player.vx >= p.x + p.width) { player.x = p.x + p.width; player.vx = 0; }
             
             if (checkCollision(player, p)) {
-                if (player.vy > 0 && player.y + player.height - (player.vy * timeScale) <= p.y + 4) {
+                if (player.vy > 0 && player.y + player.height - player.vy <= p.y + 4) {
                     player.y = p.y - player.height; player.vy = 0; player.onGround = true; player.jumpCount = 0;
                     if (p.type === 'ice') standingOnIce = true;
                     if (p.type === 'mud') standingOnMud = true;
                     if (p.type === 'bounce') { player.vy = -player.jumpStrength * 1.25; player.onGround = false; }
-                } 
+                }
             }
         });
 
@@ -581,7 +582,7 @@ function updateCoinsCheck() {
         });
 
         bullets.forEach(b => {
-            b.x += b.vx * timeScale;
+            b.x += b.vx;
             ctx.fillStyle = '#ff3300'; ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, Math.PI*2); ctx.fill();
             
             let bulletRect = { x: b.x - 4, y: b.y - 4, width: 8, height: 8 };
@@ -596,15 +597,15 @@ function updateCoinsCheck() {
 
         enemies.forEach(e => {
             if (e.type === 'patrol') {
-                e.x += e.vx * timeScale; if (e.x < e.minX || e.x > e.maxX) e.vx *= -1;
+                e.x += e.vx; if (e.x < e.minX || e.x > e.maxX) e.vx *= -1;
                 ctx.fillStyle = '#ff1111'; ctx.fillRect(e.x, e.y, e.width, e.height);
             } else if (e.type === 'drone') {
-                e.x += e.vx * timeScale; if (e.x < e.minX || e.x > e.maxX) e.vx *= -1;
-                e.timeTrack += 0.05 * timeScale;
+                e.x += e.vx; if (e.x < e.minX || e.x > e.maxX) e.vx *= -1;
+                e.timeTrack += 0.05;
                 e.y = e.baseScaleY + Math.sin(e.timeTrack) * 25;
                 ctx.fillStyle = '#ff5500'; ctx.fillRect(e.x, e.y, e.width, e.height);
             } else if (e.type === 'turret') {
-                e.shootCooldown -= timeScale;
+                e.shootCooldown--;
                 if (e.shootCooldown <= 0) {
                     let bDir = (player.x < e.x) ? -3.5 : 3.5;
                     bullets.push({ x: e.x + e.width/2, y: e.y + 10, vx: bDir });
@@ -623,7 +624,7 @@ function updateCoinsCheck() {
             }
         });
 
-        if (currentEvent.name === "ЗВЕЗДНЫЙ ДОЖДЬ" && Math.random() < 0.02 * timeScale) {
+        if (currentEvent.name === "ЗВЕЗДНЫЙ ДОЖДЬ" && Math.random() < 0.02) {
             bullets.push({ x: Math.random() * 740 + 20, y: 10, vx: (Math.random() - 0.5) * 2, vy: 4 });
         }
 
