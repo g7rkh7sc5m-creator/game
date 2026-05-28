@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>Хардкорный Платформер v15</title>
+<title>Хардкорный Платформер v16</title>
 <style>
     * { box-sizing: border-box; }
-    body { background: #1a1a1a; margin: 0; padding: 0; font-family: Arial, sans-serif; overflow: hidden; width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: manipulation; }
+    body { background: #111; margin: 0; padding: 0; font-family: Arial, sans-serif; overflow: hidden; width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: manipulation; }
     .game-container { position: relative; max-width: 100%; max-height: 100%; }
-    canvas { background: #222; display: block; max-width: 100%; max-height: 100%; box-shadow: 0 0 15px rgba(0,0,0,0.5); }
-    .game-over-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.93); display: none; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 5; padding: 15px; }
+    canvas { background: #151515; display: block; max-width: 100%; max-height: 100%; box-shadow: 0 0 25px rgba(0,0,0,0.8); }
+    .game-over-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95); display: none; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 5; padding: 15px; }
     .game-over-overlay h1 { color: #ff3333; margin: 0 0 5px 0; font-size: 26px; text-shadow: 0 0 10px rgba(255,0,0,0.5); }
     .timer-text { font-size: 18px; font-weight: bold; margin: 5px 0; color: #ffcc00; }
     .test-revive-btn { background: gold; color: #111; border: none; padding: 10px 20px; font-weight: bold; border-radius: 5px; cursor: pointer; font-size: 14px; margin-bottom: 15px; }
@@ -17,15 +17,16 @@
     .skins-grid { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; max-width: 500px; }
     .skin-card { background: #2a2a2a; border: 2px solid #444; border-radius: 8px; padding: 6px; display: flex; flex-direction: column; align-items: center; width: 90px; cursor: pointer; }
     .skin-card.active { border-color: lime; background: #2d3d2d; }
-    .skin-preview { width: 20px; height: 30px; margin-bottom: 5px; border-radius: 3px; }
-    .skin-name { font-size: 10px; font-weight: bold; margin-bottom: 4px; text-align: center; }
+    .skin-preview { width: 20px; height: 30px; margin-bottom: 5px; border-radius: 3px; position: relative; }
+    .skin-name { font-size: 9px; font-weight: bold; margin-bottom: 2px; text-align: center; }
+    .skin-desc { font-size: 8px; color: #aaa; text-align: center; margin-bottom: 4px; line-height: 1; min-height: 16px; }
     .skin-price { font-size: 10px; color: #ffcc00; font-weight: bold; }
-    .mobile-ui { position: absolute; bottom: 30px; left: 0; right: 0; display: flex; justify-content: space-between; padding: 0 30px; width: 100%; pointer-events: none; z-index: 2; }
-    .move-group { display: flex; gap: 20px; pointer-events: auto; }
-    .touch-btn { background: rgba(255, 255, 255, 0.2); color: white; border: 2px solid rgba(255, 255, 255, 0.5); width: 70px; height: 70px; border-radius: 50%; font-size: 28px; font-weight: bold; display: flex; justify-content: center; align-items: center; cursor: pointer; pointer-events: auto; }
-    .touch-btn:active { background: rgba(255, 255, 255, 0.5); }
-    .jump-btn { width: 85px; height: 85px; background: rgba(0, 255, 0, 0.25); border-color: lime; color: lime; font-size: 18px; }
-    .jump-btn:active { background: rgba(0, 255, 0, 0.6); }
+    .mobile-ui { position: absolute; bottom: 20px; left: 0; right: 0; display: flex; justify-content: space-between; padding: 0 20px; width: 100%; pointer-events: none; z-index: 2; }
+    .move-group, .action-group { display: flex; gap: 12px; pointer-events: auto; align-items: flex-end; }
+    .touch-btn { background: rgba(255, 255, 255, 0.15); color: white; border: 2px solid rgba(255, 255, 255, 0.4); width: 60px; height: 60px; border-radius: 50%; font-size: 22px; font-weight: bold; display: flex; justify-content: center; align-items: center; cursor: pointer; pointer-events: auto; }
+    .touch-btn:active { background: rgba(255, 255, 255, 0.4); }
+    .jump-btn { width: 75px; height: 75px; background: rgba(0, 255, 0, 0.2); border-color: lime; color: lime; font-size: 14px; }
+    .jump-btn:active { background: rgba(0, 255, 0, 0.5); }
     .download-container { position: absolute; top: 10px; right: 10px; z-index: 10; }
     .download-btn { background-color: lime; color: #111; border: none; padding: 8px 15px; font-size: 14px; font-weight: bold; border-radius: 5px; cursor: pointer; }
 </style>
@@ -38,47 +39,25 @@
         <h1>ЖИЗНИ ЗАКОНЧИЛИСЬ</h1>
         <div class="timer-text" id="timerText">05:00</div>
         <button class="test-revive-btn" id="testReviveBtn">Восстановить за 100 🪙</button>
-        <div class="shop-title">МАГАЗИН СКИНОВ</div>
+        <div class="shop-title">МАГАЗИН СКИНОВ С ПАССИВКАМИ</div>
         <div class="skins-grid" id="skinsGrid"></div>
     </div>
 </div>
 <div class="mobile-ui">
-    <div class="move-group"><div class="touch-btn" id="btnLeft">←</div><div class="touch-btn" id="btnRight">→</div></div>
-    <div class="touch-btn jump-btn" id="btnJump">ВВЕРХ</div>
+    <div class="move-group">
+        <div class="touch-btn" id="btnLeft">←</div>
+        <div class="touch-btn" id="btnRight">→</div>
+    </div>
+    <div class="action-group">
+        <div class="touch-btn" id="btnHook" style="background:rgba(255,255,0,0.15); border-color:yellow; color:yellow; font-size:12px;">КРЮК</div>
+        <div class="touch-btn" id="btnParry" style="background:rgba(255,0,0,0.15); border-color:red; color:red; font-size:12px;">ЩИТ</div>
+        <div class="touch-btn" id="btnDash" style="background:rgba(0,150,255,0.15); border-color:#00aeff; color:#00aeff; font-size:12px;">РЫВОК</div>
+        <div class="touch-btn" id="btnSlow" style="background:rgba(255,0,255,0.15); border-color:#ff00ff; color:#ff00ff; font-size:12px;">ВРЕМЯ</div>
+        <div class="touch-btn jump-btn" id="btnJump">ВВЕРХ</div>
+    </div>
 </div>
-<script><!-- Вставляй этот код сразу после окончания Части 1 -->
-const canvas = document.getElementById('gameCanvas'); const ctx = canvas.getContext('2d');
+<script>const canvas = document.getElementById('gameCanvas'); const ctx = canvas.getContext('2d');
 const overlay = document.getElementById('gameOverOverlay'); const timerText = document.getElementById('timerText'); const skinsGrid = document.getElementById('skinsGrid');
-
-// Глобальный коэффициент времени (1.0 — норма, 0.4 — замедление)
-let timeScale = 1.0; 
-let isTimeSlowActive = false;
-
-// Добавляем новые сенсорные кнопки (Рывок и Замедление) в мобильный UI
-const mobileUi = document.querySelector('.mobile-ui');
-if (mobileUi) {
-    // Кнопка РЫВОК
-    const dashBtn = document.createElement('div');
-    dashBtn.className = 'touch-btn';
-    dashBtn.id = 'btnDash';
-    dashBtn.style.background = 'rgba(0, 150, 255, 0.25)';
-    dashBtn.style.borderColor = '#00aeff';
-    dashBtn.style.color = '#00aeff';
-    dashBtn.style.fontSize = '14px';
-    dashBtn.innerText = 'РЫВОК';
-    mobileUi.insertBefore(dashBtn, mobileUi.lastChild);
-
-    // Кнопка ВРЕМЯ
-    const slowBtn = document.createElement('div');
-    slowBtn.className = 'touch-btn';
-    slowBtn.id = 'btnSlow';
-    slowBtn.style.background = 'rgba(255, 0, 255, 0.25)';
-    slowBtn.style.borderColor = '#ff00ff';
-    slowBtn.style.color = '#ff00ff';
-    slowBtn.style.fontSize = '14px';
-    slowBtn.innerText = 'ВРЕМЯ';
-    mobileUi.insertBefore(slowBtn, mobileUi.lastChild);
-}
 
 function resizeCanvas() {
     const targetWidth = 800; const targetHeight = 500; const windowWidth = window.innerWidth; const windowHeight = window.innerHeight;
@@ -88,10 +67,9 @@ function resizeCanvas() {
 window.addEventListener('resize', resizeCanvas); window.addEventListener('orientationchange', resizeCanvas);
 resizeCanvas();
 
-// Анти-баг кэша памяти
-if (!localStorage.getItem('p_game_initialized_v15')) {
+if (!localStorage.getItem('p_game_initialized_v16')) {
     localStorage.clear();
-    localStorage.setItem('p_game_initialized_v15', 'true');
+    localStorage.setItem('p_game_initialized_v16', 'true');
 }
 
 let savedLives = localStorage.getItem('p_player_lives'); let playerLives = savedLives !== null ? parseInt(savedLives) : 3;
@@ -99,37 +77,47 @@ let savedScore = localStorage.getItem('p_player_score'); let score = savedScore 
 let savedLevel = localStorage.getItem('p_player_level'); let currentLevel = savedLevel !== null ? parseInt(savedLevel) : 1;
 
 const skinsData = [
-    { id: 'lime', name: 'ЛАЙМ', color: 'lime', price: 0 }, { id: 'cyan', name: 'ОКЕАН', color: '#00ffff', price: 30 },
-    { id: 'ice', name: 'ЛЕД КРИСТАЛ', color: '#a3e5ff', price: 50 }, { id: 'gold', name: 'ЗОЛОТО', color: '#ffd700', price: 70 },
-    { id: 'slime', name: 'СЛИЗЬ', color: '#39ff14', price: 90 }, { id: 'purple', name: 'КИБЕР', color: '#ba00ff', price: 120 },
-    { id: 'lightning', name: 'МОЛНИЯ', color: '#ffffff', price: 160 }, { id: 'fire', name: 'ПЛАМЯ', color: '#ff3300', price: 200 },
-    { id: 'matter', name: 'МАТЕРИЯ', color: '#440066', price: 250 }
+    { id: 'lime', name: 'ЛАЙМ', color: 'lime', price: 0, desc: 'Без бонусов' },
+    { id: 'ghost', name: 'ПРИЗРАК', color: 'rgba(230,240,255,0.7)', price: 30, desc: 'Иммунитет х2 дольше' },
+    { id: 'cyborg', name: 'КИБОРГ', color: '#ba00ff', price: 50, desc: 'Рывок чаще, прыжок -5%' },
+    { id: 'midas', name: 'МИДАС', color: '#ffd700', price: 80, desc: '+40% монет из сундуков' },
+    { id: 'vulcan', name: 'ВУЛКАН', color: '#ff3300', price: 120, desc: 'Иммун к лаве, скользит' },
+    { id: 'ninja', name: 'НИНДЗЯ', color: '#444444', price: 180, desc: 'Тройной прыжок, макс жизней: 2' }
 ];
 
 let purchasedSkins = JSON.parse(localStorage.getItem('p_purchased_skins')) || ['lime'];
 let currentSkinColor = localStorage.getItem('p_current_skin_color') || 'lime';
 let currentSkinId = localStorage.getItem('p_current_skin_id') || 'lime';
 
-// Физика игрока с поддержкой Рывка и Тайм-слоу
+let timeScale = 1.0; 
+let isTimeSlowActive = false;
+let slowModeTimer = 0;
+let comboCount = 0;
+let comboTimer = 0;
+let currentEvent = { name: "НЕТ", desc: "Обычные условия" };
+
 const player = { 
-    x: 50, y: 350, width: 30, height: 50, 
+    x: 50, y: 350, width: 26, height: 44, 
     color: currentSkinColor, skinId: currentSkinId, 
-    vx: 0, vy: 0, speed: 5.5, jumpStrength: 13, 
+    vx: 0, vy: 0, speed: 5.5, jumpStrength: 13.5, 
     onGround: false, jumpCount: 0, maxJumps: 2, maxLives: 3, invulnerable: 0,
-    dashTimer: 0, dashCooldown: 0, dashDir: 0, lastLeftTime: 0, lastRightTime: 0
+    dashTimer: 0, dashCooldown: 0, dashDir: 0, lastLeftTime: 0, lastRightTime: 0,
+    hookActive: false, hookX: 0, hookY: 0, hookLen: 0, hookAngle: 0, hookSpeed: 0,
+    parryActive: 0, parryCooldown: 0
 };
-player.lives = playerLives; const gravity = 0.6; const keys = {}; let platforms = []; let coins = []; let enemies = []; let chests = []; let door = { x: 0, y: 0, width: 40, height: 60, open: false }; let isGameOver = false; window.playerParticles = [];
-let standingOnIce = false; let standingOnMud = false;
-let slowModeTimer = 0; // Для списывания монет во времени
-const biomes = [
-    { name: "КЛАССИЧЕСКИЙ МИР", bg: "#1a1a1a", plat: "#8B4513", coin: "gold", door: "#4aeade" },
-    { name: "ИЗУМРУДНЫЙ ЛЕС", bg: "#142518", plat: "#2e5c36", coin: "#00FF7F", door: "#ADFF2F" },
-    { name: "НЕОНОВЫЙ КИБЕР", bg: "#120a1c", plat: "#ff0055", coin: "#00FFFF", door: "#ba00ff" },
-    { name: "ЛЕДЯНАЯ БЕЗДНА", bg: "#0d1b2a", plat: "#415a77", coin: "#e0f7fa", door: "#00b4d8" },
-    { name: "ВУЛКАНИЧЕСКИЙ АД", bg: "#1a0f0f", plat: "#4a1515", coin: "#ff4d4d", door: "#ff9900" },
-    { name: "КОСМИЧЕСКАЯ ТУМАННОСТЬ", bg: "#1a0b2e", plat: "#5c258d", coin: "#e0b0ff", door: "#ff007f" }
+player.lives = playerLives; const gravity = 0.6; const keys = {};
+
+let platforms = []; let coins = []; let enemies = []; let chests = []; let bullets = [];
+let door = { x: 0, y: 0, width: 44, height: 64, open: false }; 
+let isGameOver = false;
+let standingOnIce = false; let standingOnMud = false;const biomes = [
+    { name: "КЛАССИЧЕСКИЙ МИР", bg: "#151515", plat: "#5c3a21", coin: "gold", door: "#00ffcc" },
+    { name: "ИЗУМРУДНЫЙ ЛЕС", bg: "#0d1b12", plat: "#22442b", coin: "#39ff14", door: "#ccff00" },
+    { name: "НЕОНОВЫЙ КИБЕР", bg: "#0c0514", plat: "#bd0042", coin: "#00ffff", door: "#d600ff" },
+    { name: "ЛЕДЯНАЯ БЕЗДНА", bg: "#060f17", plat: "#2b435c", coin: "#ffffff", door: "#0099ff" },
+    { name: "ВУЛКАНИЧЕСКИЙ АД", bg: "#140707", plat: "#3b0f0f", coin: "#ff4500", door: "#ffcc00" }
 ];
-let currentBiome = biomes[0];
+let currentBiome = biomes;
 
 function saveProgress() { 
     localStorage.setItem('p_player_lives', player.lives); 
@@ -140,55 +128,77 @@ function saveProgress() {
 function generateNewLevel() {
     let biomeIndex = Math.floor((currentLevel - 1) / 3) % biomes.length; 
     currentBiome = biomes[biomeIndex];
-    if (player.lives <= 0) player.lives = player.maxLives;
     
-    // Сброс состояния игрока (с сохранением неуязвимости при спавне)
-    player.x = 50; player.y = 350; player.vx = 0; player.vy = 0; player.jumpCount = 0; player.invulnerable = 60;
-    player.dashTimer = 0; player.dashCooldown = 0; player.dashDir = 0;
-    window.playerParticles = []; standingOnIce = false; standingOnMud = false;
+    let maxAllowedLives = (player.skinId === 'ninja') ? 2 : 3;
+    if (player.lives <= 0 || player.lives > maxAllowedLives) player.lives = maxAllowedLives;
+    
+    player.x = 60; player.y = 300; player.vx = 0; player.vy = 0; player.jumpCount = 0;
+    player.invulnerable = 60; player.dashTimer = 0; player.dashCooldown = 0;
+    player.hookActive = false; player.parryActive = 0; player.parryCooldown = 0;
+    comboCount = 0; comboTimer = 0;
+    
     isGameOver = false; overlay.style.display = 'none';
+    standingOnIce = false; standingOnMud = false;
 
-    // Создаем начальную безопасную зону и невидимые границы карты
+    let eventRand = Math.random();
+    if (eventRand < 0.15) {
+        currentEvent = { name: "ЗВЕЗДНЫЙ ДОЖДЬ", desc: "С неба падают метеориты! Монет в 2 раза больше" };
+    } else if (eventRand < 0.30) {
+        currentEvent = { name: "ЗОЛОТАЯ ЛИХОРАДКА", desc: "Из сундуков вылетает гора золота" };
+    } else {
+        currentEvent = { name: "НЕТ", desc: "Обычные условия выживания" };
+    }
+
     platforms = [
-        { x: 0, y: 450, width: 200, height: 50, color: currentBiome.plat, type: 'normal' },
+        { x: 0, y: 440, width: 180, height: 60, color: currentBiome.plat, type: 'normal' },
         { x: 0, y: 0, width: 20, height: 500, color: '#333', type: 'wall' },
         { x: 780, y: 0, width: 20, height: 500, color: '#333', type: 'wall' }
     ]; 
-    coins = []; enemies = []; chests = [];
+    coins = []; enemies = []; chests = []; bullets = [];
     
     let currentX = 220; 
-    let currentY = 400;
+    let currentY = 380;
     
-    // Алгоритмическая генерация платформ до конца экрана
-    while (currentX < 700) {
-        let width = Math.random() * 60 + 70;
-        let height = 20;
+    while (currentX < 680) {
+        let width = Math.random() * 50 + 65;
+        let height = 24;
         let typeRand = Math.random();
         let type = 'normal';
         let platColor = currentBiome.plat;
 
-        // Распределяем типы ловушек на платформах
-        if (typeRand < 0.15) { type = 'ice'; platColor = '#a3e5ff'; }
-        else if (typeRand < 0.30) { type = 'mud'; platColor = '#4a3525'; }
-        else if (typeRand < 0.40) { type = 'bounce'; platColor = '#ff007f'; }
+        if (typeRand < 0.18) { type = 'ice'; platColor = '#8ad1ff'; }
+        else if (typeRand < 0.32) { type = 'mud'; platColor = '#3b2618'; }
+        else if (typeRand < 0.45) { type = 'bounce'; platColor = '#e60067'; }
+        else if (typeRand < 0.55) { type = 'break'; platColor = '#ff9900'; }
 
-        platforms.push({ x: currentX, y: currentY, width: width, height: height, color: platColor, type: type });
+        platforms.push({ x: currentX, y: currentY, width: width, height: height, color: platColor, type: type, timer: 60 });
         
-        // Шанс генерации лута и врагов на платформе
-        if (Math.random() < 0.5) coins.push({ x: currentX + width/2, y: currentY - 25, radius: 8, collected: false });
-        if (Math.random() < 0.25) enemies.push({ x: currentX + 10, y: currentY - 25, width: 24, height: 25, vx: 1.5, minX: currentX, maxX: currentX + width - 24, type: 'patrol' });
+        let coinsCount = (currentEvent.name === "ЗВЕЗДНЫЙ ДОЖДЬ") ? 3 : 1;
+        for (let i = 0; i < coinsCount; i++) {
+            coins.push({ x: currentX + (width / (coinsCount + 1)) * (i + 1), y: currentY - 25, radius: 7, collected: false });
+        }
+
+        let enemyRand = Math.random();
+        if (enemyRand < 0.20) {
+            enemies.push({ x: currentX + 10, y: currentY - 26, width: 24, height: 26, vx: 1.3, minX: currentX, maxX: currentX + width - 24, type: 'patrol' });
+        } else if (enemyRand < 0.38) {
+            enemies.push({ x: currentX + width/2 - 10, y: currentY - 80, width: 20, height: 20, vx: 1.0, minX: currentX, maxX: currentX + width - 20, baseScaleY: currentY - 80, timeTrack: Math.random() * 10, type: 'drone' });
+        } else if (enemyRand < 0.50) {
+            enemies.push({ x: currentX + width/2 - 12, y: currentY - 30, width: 24, height: 30, shootCooldown: Math.random() * 90 + 30, type: 'turret' });
+        }
         
-        // Рассчитываем прыжковое расстояние до следующей платформы
-        currentX += width + Math.random() * 50 + 40;
-        currentY += (Math.random() - 0.5) * 80;
-        if (currentY > 420) currentY = 400;
-        if (currentY < 150) currentY = 200;
+        currentX += width + Math.random() * 45 + 50;
+        currentY += (Math.random() - 0.5) * 90;
+        if (currentY > 410) currentY = 390;
+        if (currentY < 160) currentY = 220;
     }
 
-    // Создаем стабильную финальную платформу с выходом и сундуком
-    platforms.push({ x: 680, y: 350, width: 120, height: 150, color: currentBiome.plat, type: 'normal' });
-    door = { x: 720, y: 290, width: 40, height: 60, open: true };
-    if (Math.random() < 0.4) chests.push({ x: 730, y: 325, width: 25, height: 25, opened: false });
+    platforms.push({ x: 680, y: 360, width: 120, height: 140, color: currentBiome.plat, type: 'normal' });
+    door = { x: 725, y: 296, width: 40, height: 64, open: false }; 
+    
+    if (Math.random() < 0.5) {
+        chests.push({ x: 690, y: 335, width: 26, height: 25, opened: false });
+    }
 
     saveProgress();
 }function updateShop() {
@@ -201,6 +211,7 @@ function generateNewLevel() {
         card.innerHTML = `
             <div class="skin-preview" style="background:${skin.color}"></div>
             <div class="skin-name">${skin.name}</div>
+            <div class="skin-desc">${skin.desc}</div>
             <div class="skin-price">${isActive ? 'АКТИВЕН' : (isPurchased ? 'ВЫБРАТЬ' : skin.price + ' 🪙')}</div>
         `;
         card.onclick = () => {
@@ -226,17 +237,14 @@ function startReviveTimer() {
     timeLeft = 300;
     clearInterval(reviveTimer);
     reviveTimer = setInterval(() => {
-        // Учет замедления времени на таймер UI не влияет
         timeLeft--;
         let m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
         let s = (timeLeft % 60).toString().padStart(2, '0');
         timerText.textContent = `${m}:${s}`;
         if (timeLeft <= 0) {
             clearInterval(reviveTimer);
-            // Если время вышло, принудительно обнуляем прогресс уровней
-            currentLevel = 1;
-            score = 0;
-            player.lives = 3;
+            currentLevel = 1; score = 0; 
+            player.lives = (player.skinId === 'ninja') ? 2 : 3;
             generateNewLevel();
         }
     }, 1000);
@@ -244,7 +252,7 @@ function startReviveTimer() {
 
 function handleDeath() {
     player.lives--;
-    // Если активен слоу-моушн, принудительно выключаем его при смерти
+    comboCount = 0; comboTimer = 0;
     if (isTimeSlowActive) {
         isTimeSlowActive = false;
         timeScale = 1.0;
@@ -255,36 +263,28 @@ function handleDeath() {
         startReviveTimer();
         updateShop();
     } else {
-        player.x = 50; player.y = 350; player.vx = 0; player.vy = 0; player.invulnerable = 60;
+        player.x = 60; player.y = 300; player.vx = 0; player.vy = 0;
+        player.invulnerable = (player.skinId === 'ghost') ? 120 : 60;
+        player.hookActive = false;
     }
     saveProgress();
 }
 
 document.getElementById('testReviveBtn').onclick = () => {
+    let maxLives = (player.skinId === 'ninja') ? 2 : 3;
     if (score >= 100) {
-        score -= 100; player.lives = 3; isGameOver = false; overlay.style.display = 'none'; clearInterval(reviveTimer); generateNewLevel();
-    } else { alert("Недостаточно монет для воскрешения!"); }
+        score -= 100; player.lives = maxLives; isGameOver = false; overlay.style.display = 'none'; clearInterval(reviveTimer); generateNewLevel();
+    } else { alert("Недостаточно монет!"); }
 };window.addEventListener('keydown', e => { 
     keys[e.code] = true; 
-    
-    // Прыжок
-    if (e.code === 'KeyW' || e.code === 'Space' || e.code === 'ArrowUp') {
-        jump(); 
-    }
-    
-    // Активация рывка (Dash) по нажатию Shift
-    if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
-        executeDash();
-    }
-    
-    // Переключение замедления времени (Time Slow) по нажатию CapsLock
-    if (e.code === 'CapsLock') {
-        toggleTimeSlow();
-    }
+    if (e.code === 'KeyW' || e.code === 'Space' || e.code === 'ArrowUp') jump(); 
+    if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') executeDash();
+    if (e.code === 'CapsLock') toggleTimeSlow();
+    if (e.code === 'KeyE') launchHook();
+    if (e.code === 'KeyQ') activateParry();
 });
 
 window.addEventListener('keyup', e => {
-    // Механика двойного нажатия стрелок для рывка на клавиатуре
     if (e.code === 'ArrowLeft' || e.code === 'KeyA') {
         let now = performance.now();
         if (now - player.lastLeftTime < 250) executeDash(-1);
@@ -298,104 +298,161 @@ window.addEventListener('keyup', e => {
     keys[e.code] = false;
 });
 
-// Настройка мобильного тач-интерфейса
-const bLeft = document.getElementById('btnLeft'); 
-const bRight = document.getElementById('btnRight'); 
-const bJump = document.getElementById('btnJump');
-const bDash = document.getElementById('btnDash');
-const bSlow = document.getElementById('btnSlow');
+const bLeft = document.getElementById('btnLeft'); const bRight = document.getElementById('btnRight'); const bJump = document.getElementById('btnJump');
+const bDash = document.getElementById('btnDash'); const bSlow = document.getElementById('btnSlow');
+const bHook = document.getElementById('btnHook'); const bParry = document.getElementById('btnParry');
 
-if (bLeft) {
-    bLeft.ontouchstart = (e) => { e.preventDefault(); keys['ArrowLeft'] = true; }; 
-    bLeft.ontouchend = () => keys['ArrowLeft'] = false;
-}
-if (bRight) {
-    bRight.ontouchstart = (e) => { e.preventDefault(); keys['ArrowRight'] = true; }; 
-    bRight.ontouchend = () => keys['ArrowRight'] = false;
-}
-if (bJump) {
-    bJump.ontouchstart = (e) => { e.preventDefault(); jump(); };
-}
-if (bDash) {
-    bDash.ontouchstart = (e) => { e.preventDefault(); executeDash(); };
-}
-if (bSlow) {
-    bSlow.ontouchstart = (e) => { e.preventDefault(); toggleTimeSlow(); };
-}
+if (bLeft) { bLeft.ontouchstart = (e) => { e.preventDefault(); keys['ArrowLeft'] = true; }; bLeft.ontouchend = () => keys['ArrowLeft'] = false; }
+if (bRight) { bRight.ontouchstart = (e) => { e.preventDefault(); keys['ArrowRight'] = true; }; bRight.ontouchend = () => keys['ArrowRight'] = false; }
+if (bJump) { bJump.ontouchstart = (e) => { e.preventDefault(); jump(); }; }
+if (bDash) { bDash.ontouchstart = (e) => { e.preventDefault(); executeDash(); }; }
+if (bSlow) { bSlow.ontouchstart = (e) => { e.preventDefault(); toggleTimeSlow(); }; }
+if (bHook) { bHook.ontouchstart = (e) => { e.preventDefault(); launchHook(); }; }
+if (bParry) { bParry.ontouchstart = (e) => { e.preventDefault(); activateParry(); }; }
 
 function jump() {
-    if (player.onGround || player.jumpCount < player.maxJumps) {
-        // Сила прыжка не уменьшается в слоу-мо, чтобы сохранить управляемость
-        player.vy = -player.jumpStrength; 
+    let maxAllowedJumps = (player.skinId === 'ninja') ? 3 : 2;
+    let calculatedJump = (player.skinId === 'cyborg') ? player.jumpStrength * 0.95 : player.jumpStrength;
+
+    if (player.onGround || player.jumpCount < maxAllowedJumps) {
+        player.vy = -calculatedJump; 
         player.jumpCount++; 
         player.onGround = false;
+        player.hookActive = false;
     }
 }
 
 function executeDash(forcedDir = 0) {
+    let calculatedCd = (player.skinId === 'cyborg') ? 25 : 45;
     if (player.dashCooldown > 0 || isGameOver) return;
     
     let dir = forcedDir;
     if (dir === 0) {
         if (keys['ArrowLeft'] || keys['KeyA']) dir = -1;
         else if (keys['ArrowRight'] || keys['KeyD']) dir = 1;
-        else dir = (player.vx >= 0) ? 1 : -1; // Направление по умолчанию
+        else dir = (player.vx >= 0) ? 1 : -1;
     }
     
-    player.dashTimer = 10;     // Длительность рывка в кадрах
-    player.dashCooldown = 45;  // Перезарядка рывка
+    player.dashTimer = 10;
+    player.dashCooldown = calculatedCd;
     player.dashDir = dir;
-    player.vy = 0;             // Обнуляем вертикальную скорость для зависания
+    player.vy = 0;
+    player.hookActive = false;
 }
 
 function toggleTimeSlow() {
     if (isGameOver) return;
     if (!isTimeSlowActive) {
         if (score >= 1) {
-            isTimeSlowActive = true;
-            timeScale = 0.4;
+            isTimeSlowActive = true; timeScale = 0.4;
             if (bSlow) bSlow.style.background = 'rgba(255, 0, 255, 0.6)';
         }
     } else {
-        isTimeSlowActive = false;
-        timeScale = 1.0;
-        if (bSlow) bSlow.style.background = 'rgba(255, 0, 255, 0.25)';
+        isTimeSlowActive = false; timeScale = 1.0;
+        if (bSlow) bSlow.style.background = 'rgba(255, 0, 255, 0.15)';
     }
+}
+
+function launchHook() {
+    if (isGameOver) return;
+    if (player.hookActive) {
+        player.hookActive = false;
+        return;
+    }
+    let bestP = null;
+    let minDist = 250;
+    platforms.forEach(p => {
+        if (p.type !== 'wall' && p.y < player.y) {
+            let px = p.x + p.width / 2;
+            let py = p.y;
+            let dist = Math.hypot(px - (player.x + player.width/2), py - player.y);
+            if (dist < minDist) {
+                minDist = dist;
+                bestP = { x: px, y: py };
+            }
+        }
+    });
+
+    if (bestP) {
+        player.hookActive = true;
+        player.hookX = bestP.x;
+        player.hookY = bestP.y;
+        player.hookLen = minDist;
+        player.hookAngle = Math.atan2(player.y - player.hookY, player.x + player.width/2 - player.hookX);
+        player.hookSpeed = 0;
+    }
+}
+
+function activateParry() {
+    if (player.parryCooldown > 0 || isGameOver) return;
+    player.parryActive = 20;
+    player.parryCooldown = 90;
 }
 
 function checkCollision(r1, r2) {
     return r1.x < r2.x + r2.width && r1.x + r1.width > r2.x && r1.y < r2.y + r2.height && r1.y + r1.height > r2.y;
+}
+
+function updateCoinsCheck() {
+    let remaining = coins.filter(c => !c.collected).length;
+    if (remaining === 0 && coins.length > 0) {
+        door.open = true;
+    } else {
+        door.open = false;
+    }
 }function gameLoop() {
     ctx.fillStyle = currentBiome.bg; ctx.clearRect(0,0,800,500); ctx.fillRect(0,0,800,500);
 
     if (!isGameOver) {
-        // Логика списания монет за использование замедления времени (1 монета в секунду)
         if (isTimeSlowActive) {
             slowModeTimer += 1;
-            if (slowModeTimer >= 60) { // Примерно раз в секунду при 60 FPS
-                if (score > 0) {
-                    score--;
-                    saveProgress();
-                } else {
-                    toggleTimeSlow(); // Выключаем, если монеты кончились
-                }
+            if (slowModeTimer >= 60) {
+                if (score > 0) { score--; saveProgress(); } 
+                else { toggleTimeSlow(); }
                 slowModeTimer = 0;
             }
         }
 
-        // Применяем таймскейл к кулдаунам
         if (player.dashCooldown > 0) player.dashCooldown -= timeScale;
+        if (player.parryCooldown > 0) player.parryCooldown -= timeScale;
+        if (player.parryActive > 0) player.parryActive -= timeScale;
 
-        // Расчет перемещения игрока с учетом рывка (Dash) или обычной ходьбы
-        if (player.dashTimer > 0) {
-            player.vx = player.dashDir * 14; // Скорость рывка фиксирована
-            player.vy = 0; // Игрок не падает во время рывка
+        if (comboTimer > 0) {
+            comboTimer -= timeScale;
+            if (comboTimer <= 0) { comboCount = 0; }
+        }
+
+        if (player.hookActive) {
+            let px = player.x + player.width / 2;
+            let py = player.y + player.height / 2;
+            let hookG = 0.25;
+            let angleAcc = -hookG * Math.sin(player.hookAngle) / player.hookLen;
+            
+            if (keys['ArrowLeft'] || keys['KeyA']) angleAcc -= 0.003;
+            if (keys['ArrowRight'] || keys['KeyD']) angleAcc += 0.003;
+            
+            player.hookSpeed += angleAcc * timeScale;
+            player.hookSpeed *= Math.pow(0.992, timeScale);
+            player.hookAngle += player.hookSpeed * timeScale;
+            
+            player.x = player.hookX + Math.cos(player.hookAngle) * player.hookLen - player.width / 2;
+            player.y = player.hookY + Math.sin(player.hookAngle) * player.hookLen - player.height / 2;
+            player.vx = -player.hookSpeed * player.hookLen * Math.sin(player.hookAngle);
+            player.vy = player.hookSpeed * player.hookLen * Math.cos(player.hookAngle);
+        } 
+        else if (player.dashTimer > 0) {
+            player.vx = player.dashDir * 13;
+            player.vy = 0;
             player.dashTimer -= timeScale;
-        } else {
-            // Обычное движение
-            let accel = standingOnIce ? 0.15 : (standingOnMud ? 0.05 : 0.6);
-            let friction = standingOnIce ? 0.98 : (standingOnMud ? 0.7 : 0.82);
-            let maxSpd = standingOnMud ? 2.5 : player.speed;
+        } 
+        else {
+            let accel = standingOnIce ? 0.12 : (standingOnMud ? 0.04 : 0.55);
+            let friction = standingOnIce ? 0.99 : (standingOnMud ? 0.65 : 0.82);
+            let maxSpd = standingOnMud ? 2.2 : player.speed;
+
+            if (standingOnIce && player.skinId === 'vulcan') {
+                accel = 0.05; friction = 0.997;
+            }
 
             if (keys['ArrowLeft'] || keys['KeyA']) player.vx -= accel * timeScale;
             else if (keys['ArrowRight'] || keys['KeyD']) player.vx += accel * timeScale;
@@ -407,18 +464,26 @@ function checkCollision(r1, r2) {
             player.vy += gravity * timeScale;
         }
 
-        // Применяем вычисленные скорости к координатам персонажа
-        player.x += player.vx * timeScale; 
-        player.y += player.vy * timeScale;
+        if (!player.hookActive) {
+            player.x += player.vx * timeScale; 
+            player.y += player.vy * timeScale;
+        }
 
-        if (player.invulnerable > 0) player.invulnerable -= timeScale;
         if (player.y > 500) handleDeath();
 
-        standingOnIce = false; standingOnMud = false; player.onGround = false;
+        standingOnIce = false; standingOnMud = false; player.onGround = false;  platforms.forEach(p => {
+            ctx.fillStyle = p.color; 
+            ctx.fillRect(p.x, p.y, p.width, p.height);
 
-        // Физика платформ и столкновений
-        platforms.forEach(p => {
-            ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, p.width, p.height);
+            if (p.type === 'break' && checkCollision(player, p) && player.vy > 0) {
+                p.timer -= timeScale;
+                if (p.timer <= 0) {
+                    platforms = platforms.filter(item => item !== p);
+                    return;
+                }
+                p.color = Math.floor(p.timer) % 6 < 3 ? '#ff3300' : '#ff9900';
+            }
+
             if (player.vx > 0 && checkCollision(player, p) && player.x + player.width - (player.vx * timeScale) <= p.x) { player.x = p.x - player.width; player.vx = 0; }
             if (player.vx < 0 && checkCollision(player, p) && player.x - (player.vx * timeScale) >= p.x + p.width) { player.x = p.x + p.width; player.vx = 0; }
             
@@ -427,83 +492,138 @@ function checkCollision(r1, r2) {
                     player.y = p.y - player.height; player.vy = 0; player.onGround = true; player.jumpCount = 0;
                     if (p.type === 'ice') standingOnIce = true;
                     if (p.type === 'mud') standingOnMud = true;
-                    if (p.type === 'bounce') { player.vy = -player.jumpStrength * 1.3; player.onGround = false; }
+                    if (p.type === 'bounce') { player.vy = -player.jumpStrength * 1.25; player.onGround = false; }
                 } else if (player.vy < 0 && player.y - (player.vy * timeScale) >= p.y + p.height - 4) {
                     player.y = p.y + p.height; player.vy = 0;
                 }
             }
         });
 
-        // Сбор монет
         coins.forEach(c => {
             if (!c.collected) {
                 ctx.fillStyle = currentBiome.coin; ctx.beginPath(); ctx.arc(c.x, c.y, c.radius, 0, Math.PI*2); ctx.fill();
                 if (Math.abs(player.x + player.width/2 - c.x) < player.width/2 + c.radius && Math.abs(player.y + player.height/2 - c.y) < player.height/2 + c.radius) {
-                    c.collected = true; score += 5; saveProgress();
+                    c.collected = true; 
+                    comboCount++; comboTimer = 180; 
+                    score += 5 * (comboCount > 5 ? 2 : 1);
+                    saveProgress();
+                }
+            }
+        });
+        updateCoinsCheck();
+
+        chests.forEach(ch => {
+            ctx.fillStyle = ch.opened ? '#664422' : '#b5702d'; ctx.fillRect(ch.x, ch.y, ch.width, ch.height);
+            if (!ch.opened && checkCollision(player, ch)) { 
+                ch.opened = true; 
+                let reward = (currentEvent.name === "ЗОЛОТАЯ ЛИХОРАДКА") ? 60 : 25;
+                if (player.skinId === 'midas') reward = Math.floor(reward * 1.4); 
+                score += reward; 
+                saveProgress(); 
+            }
+        });
+
+        bullets.forEach(b => {
+            b.x += b.vx * timeScale;
+            ctx.fillStyle = '#ff3300'; ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, Math.PI*2); ctx.fill();
+            
+            let bulletRect = { x: b.x - 4, y: b.y - 4, width: 8, height: 8 };
+            if (checkCollision(player, bulletRect)) {
+                bullets = bullets.filter(item => item !== b);
+                if (player.parryActive > 0) { 
+                    comboCount++; score += 10;
+                } else if (player.invulnerable <= 0) { handleDeath(); }
+            }
+        });
+        bullets = bullets.filter(b => b.x > 0 && b.x < 800);
+
+        enemies.forEach(e => {
+            if (e.type === 'patrol') {
+                e.x += e.vx * timeScale; if (e.x < e.minX || e.x > e.maxX) e.vx *= -1;
+                ctx.fillStyle = '#ff1111'; ctx.fillRect(e.x, e.y, e.width, e.height);
+            } else if (e.type === 'drone') {
+                e.x += e.vx * timeScale; if (e.x < e.minX || e.x > e.maxX) e.vx *= -1;
+                e.timeTrack += 0.05 * timeScale;
+                e.y = e.baseScaleY + Math.sin(e.timeTrack) * 25;
+                ctx.fillStyle = '#ff5500'; ctx.fillRect(e.x, e.y, e.width, e.height);
+            } else if (e.type === 'turret') {
+                e.shootCooldown -= timeScale;
+                if (e.shootCooldown <= 0) {
+                    let bDir = (player.x < e.x) ? -3.5 : 3.5;
+                    bullets.push({ x: e.x + e.width/2, y: e.y + 10, vx: bDir });
+                    e.shootCooldown = 110;
+                }
+                ctx.fillStyle = '#990000'; ctx.fillRect(e.x, e.y, e.width, e.height);
+            }
+
+            if (checkCollision(player, e)) {
+                if (player.parryActive > 0) { 
+                    enemies = enemies.filter(item => item !== e);
+                    comboCount++; score += 15; saveProgress();
+                } else if (player.invulnerable <= 0) { 
+                    handleDeath(); 
                 }
             }
         });
 
-        // Открытие сундуков
-        chests.forEach(ch => {
-            ctx.fillStyle = ch.opened ? '#8B5A2B' : '#CD853F'; ctx.fillRect(ch.x, ch.y, ch.width, ch.height);
-            if (!ch.opened && checkCollision(player, ch)) { ch.opened = true; score += 25; saveProgress(); }
-        });
+        if (currentEvent.name === "ЗВЕЗДНЫЙ ДОЖДЬ" && Math.random() < 0.02 * timeScale) {
+            bullets.push({ x: Math.random() * 740 + 20, y: 10, vx: (Math.random() - 0.5) * 2, vy: 4 });
+        }
 
-        // Логика патрулирующих врагов
-        enemies.forEach(e => {
-            e.x += e.vx * timeScale; 
-            if (e.x < e.minX || e.x > e.maxX) e.vx *= -1;
-            ctx.fillStyle = '#ff3333'; ctx.fillRect(e.x, e.y, e.width, e.height);
-            if (checkCollision(player, e)) {
-                if (player.vy > 0 && player.y + player.height - (player.vy * timeScale) <= e.y + 4) {
-                    player.vy = -8; enemies = enemies.filter(item => item !== e); score += 15;
-                } else if (player.invulnerable <= 0) { handleDeath(); }
-            }
-        });
+        if (player.hookActive) {
+            ctx.strokeStyle = 'yellow'; ctx.lineWidth = 2; ctx.beginPath();
+            ctx.moveTo(player.hookX, player.hookY); ctx.lineTo(player.x + player.width/2, player.y + player.height/2); ctx.stroke();
+        }
 
-        // Дверь перехода на следующий уровень
-        ctx.fillStyle = door.open ? currentBiome.door : '#555'; ctx.fillRect(door.x, door.y, door.width, door.height);
+        if (player.parryActive > 0) {
+            ctx.strokeStyle = 'cyan'; ctx.lineWidth = 3; ctx.beginPath();
+            ctx.arc(player.x + player.width/2, player.y + player.height/2, 32, 0, Math.PI*2); ctx.stroke();
+        }
+
+        ctx.fillStyle = door.open ? currentBiome.door : '#444444'; 
+        ctx.fillRect(door.x, door.y, door.width, door.height);
+        
+        if (!door.open) {
+            ctx.fillStyle = 'white'; ctx.font = "11px Arial";
+            ctx.fillText("ЗАПЕРТО", door.x - 5, door.y - 8);
+        }
         if (door.open && checkCollision(player, door)) { currentLevel++; generateNewLevel(); }
 
-        // Отрисовка игрока (мигание при неуязвимости)
         if (player.invulnerable <= 0 || Math.floor(player.invulnerable / 4) % 2 === 0) {
-            ctx.fillStyle = player.color; ctx.fillRect(player.x, player.y, player.width, player.height);
+            ctx.fillStyle = player.color; 
+            ctx.fillRect(player.x, player.y, player.width, player.height);
         }
     }
 
-    // Игровой интерфейс (HUD)
-    ctx.fillStyle = "white"; ctx.font = "bold 16px Arial";
-    ctx.fillText(`УРОВЕНЬ: ${currentLevel} (${currentBiome.name})`, 20, 30);
-    ctx.fillText(`МОНЕТЫ: ${score} 🪙`, 20, 55);
-    ctx.fillText(`ЖИЗНИ: ${'❤️'.repeat(Math.max(0, player.lives))}`, 20, 80);
+    ctx.fillStyle = "white"; ctx.font = "bold 14px Arial";
+    ctx.fillText(`УРОВЕНЬ: ${currentLevel} (${currentBiome.name})`, 20, 25);
+    ctx.fillText(`МОНЕТЫ: ${score} 🪙`, 20, 48);
+    ctx.fillText(`ЖИЗНИ: ${'❤️'.repeat(Math.max(0, player.lives))}`, 20, 71);
     
-    // Индикатор активных спецспособностей
-    if (isTimeSlowActive) {
-        ctx.fillStyle = "#ff00ff";
-        ctx.fillText("ЗАМЕДЛЕНИЕ ВРЕМЕНИ АКТИВНО (-1🪙/сек)", 20, 110);
-    } else if (player.dashCooldown > 0) {
-        ctx.fillStyle = "#aaa";
-        ctx.fillText(`ПЕРЕЗАРЯДКА РЫВКА: ${Math.ceil(player.dashCooldown / 60)}с`, 20, 110);
-    } else {
-        ctx.fillStyle = "#00aeff";
-        ctx.fillText("РЫВОК ГОТОВ (Shift / Двойной тап)", 20, 110);
+    let remCoins = coins.filter(c => !c.collected).length;
+    ctx.fillStyle = remCoins > 0 ? '#ffcc00' : '#00ffcc';
+    ctx.fillText(remCoins > 0 ? `ОСТАЛОСЬ МОНЕТ: ${remCoins} 🪙` : "ВЫХОД ОТКРЫТ! 🚪", 20, 94);
+
+    if (comboCount > 0) {
+        ctx.fillStyle = '#ff0055'; ctx.font = "italic bold 14px Arial";
+        ctx.fillText(`КОМБО: X${comboCount} 🔥`, 20, 118);
     }
+
+    ctx.fillStyle = "#888"; ctx.font = "11px Arial";
+    ctx.fillText(`СОБЫТИЕ: ${currentEvent.name} (${currentEvent.desc})`, 20, 485);
 
     requestAnimationFrame(gameLoop);
 }
 
-// Функция сборки и скачивания полноценного HTML-файла игры
 document.getElementById('downloadBtn').onclick = () => {
     const htmlContent = document.documentElement.outerHTML;
     const blob = new Blob([htmlContent], { type: 'text/html' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'hardcore_platformer_v15_final.html';
+    a.download = 'hardcore_platformer_v16.html';
     a.click();
 };
 
-// Запуск игрового процесса
 generateNewLevel();
 gameLoop();
 </script>
