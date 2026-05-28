@@ -67,14 +67,11 @@ function resizeCanvas() {
 window.addEventListener('resize', resizeCanvas); window.addEventListener('orientationchange', resizeCanvas);
 resizeCanvas();
 
-if (!localStorage.getItem('p_game_initialized_v16')) {
-    localStorage.clear();
-    localStorage.setItem('p_game_initialized_v16', 'true');
-}
+localStorage.clear();
 
-let savedLives = localStorage.getItem('p_player_lives'); let playerLives = savedLives !== null ? parseInt(savedLives) : 3;
-let savedScore = localStorage.getItem('p_player_score'); let score = savedScore !== null ? parseInt(savedScore) : 0;
-let savedLevel = localStorage.getItem('p_player_level'); let currentLevel = savedLevel !== null ? parseInt(savedLevel) : 1;
+let playerLives = 3;
+let score = 0;
+let currentLevel = 1;
 
 const skinsData = [
     { id: 'lime', name: 'ЛАЙМ', color: 'lime', price: 0, desc: 'Без бонусов' },
@@ -90,9 +87,9 @@ const skinsData = [
     { id: 'matter', name: 'МАТЕРИЯ', color: '#440066', price: 150, desc: 'Классический стиль' }
 ];
 
-let purchasedSkins = JSON.parse(localStorage.getItem('p_purchased_skins')) || ['lime'];
-let currentSkinColor = localStorage.getItem('p_current_skin_color') || 'lime';
-let currentSkinId = localStorage.getItem('p_current_skin_id') || 'lime';
+let purchasedSkins = ['lime'];
+let currentSkinColor = 'lime';
+let currentSkinId = 'lime';
 
 let timeScale = 1.0; 
 let isTimeSlowActive = false;
@@ -102,7 +99,7 @@ let comboTimer = 0;
 let currentEvent = { name: "НЕТ", desc: "Обычные условия" };
 
 const player = { 
-    x: 60, y: 350, width: 26, height: 44, 
+    x: 385, y: 400, width: 26, height: 44, 
     color: currentSkinColor, skinId: currentSkinId, 
     vx: 0, vy: 0, speed: 5.5, jumpStrength: 13.5, 
     onGround: false, jumpCount: 0, maxJumps: 2, maxLives: 3, invulnerable: 0,
@@ -122,7 +119,7 @@ let standingOnIce = false; let standingOnMud = false;const biomes = [
     { name: "ЛЕДЯНАЯ БЕЗДНА", bg: "#060f17", plat: "#2b435c", coin: "#ffffff", door: "#0099ff" },
     { name: "ВУЛКАНИЧЕСКИЙ АД", bg: "#140707", plat: "#3b0f0f", coin: "#ff4500", door: "#ffcc00" }
 ];
-let currentBiome = biomes[0];
+let currentBiome = biomes;
 
 function saveProgress() { 
     localStorage.setItem('p_player_lives', player.lives); 
@@ -130,7 +127,138 @@ function saveProgress() {
     localStorage.setItem('p_player_level', currentLevel); 
 }
 
-function updateShop() {
+function generateNewLevel() {
+    let biomeIndex = Math.floor((currentLevel - 1) / 3) % biomes.length; 
+    currentBiome = biomes[biomeIndex];
+    
+    let maxAllowedLives = (player.skinId === 'ninja') ? 2 : 3;
+    if (player.lives <= 0 || player.lives > maxAllowedLives) player.lives = maxAllowedLives;
+    
+    player.x = 385; 
+    player.y = 400; 
+    player.vx = 0; 
+    player.vy = 0; 
+    player.jumpCount = 0;
+    player.invulnerable = 60; 
+    player.dashTimer = 0; 
+    player.dashCooldown = 0;
+    player.hookActive = false; 
+    player.parryActive = 0; 
+    player.parryCooldown = 0;
+    comboCount = 0; 
+    comboTimer = 0;
+    
+    isGameOver = false; 
+    overlay.style.display = 'none';
+    standingOnIce = false; 
+    standingOnMud = false;
+
+    let eventRand = Math.random();
+    if (eventRand < 0.15) {
+        currentEvent = { name: "ЗВЕЗДНЫЙ ДОЖДЬ", desc: "С неба падают метеориты! Монет в 2 раза больше" };
+    } else if (eventRand < 0.30) {
+        currentEvent = { name: "ЗОЛОТАЯ ЛИХОРАДКА", desc: "Из сундуков вылетает гора золота" };
+    } else {
+        currentEvent = { name: "НЕТ", desc: "Обычные условия выживания" };
+    }
+
+    platforms = [
+        { x: 0, y: 450, width: 800, height: 50, color: currentBiome.plat, type: 'normal' },
+        { x: 0, y: 0, width: 20, height: 500, color: '#333', type: 'wall' },
+        { x: 780, y: 0, width: 20, height: 500, color: '#333', type: 'wall' }
+    ]; 
+    coins = []; enemies = []; chests = []; bullets = [];
+    
+    let currentY = 380;
+    let levelStyle = Math.floor(Math.random() * 4);
+    
+    if (levelStyle === 0) {
+        let currentX = 200;
+        while (currentY > 110) {
+            let width = Math.random() * 40 + 80;
+            let typeRand = Math.random();
+            let type = 'normal'; let platColor = currentBiome.plat;
+            if (typeRand < 0.15) { type = 'ice'; platColor = '#8ad1ff'; }
+            else if (typeRand < 0.30) { type = 'mud'; platColor = '#3b2618'; }
+            else if (typeRand < 0.40) { type = 'bounce'; platColor = '#e60067'; }
+
+            platforms.push({ x: currentX, y: currentY, width: width, height: 20, color: platColor, type: type, timer: 60 });
+            spawnObjectsOnPlatform(currentX, currentY, width);
+
+            currentX += (Math.random() > 0.5 ? 160 : -160);
+            if (currentX < 40) currentX = 140;
+            if (currentX > 640) currentX = 500;
+            currentY -= 65;
+        }
+    } 
+    else if (levelStyle === 1) {
+        platforms.push({ x: 350, y: 160, width: 100, height: 220, color: currentBiome.plat, type: 'normal' });
+        while (currentY > 110) {
+            let width = Math.random() * 30 + 55;
+            let currentX = (currentY % 130 === 0) ? Math.random() * 120 + 50 : Math.random() * 120 + 580;
+            let typeRand = Math.random();
+            let type = typeRand < 0.25 ? 'bounce' : 'normal';
+            let platColor = type === 'bounce' ? '#e60067' : currentBiome.plat;
+
+            platforms.push({ x: currentX, y: currentY, width: width, height: 20, color: platColor, type: type, timer: 60 });
+            spawnObjectsOnPlatform(currentX, currentY, width);
+            currentY -= 60;
+        }
+    } 
+    else if (levelStyle === 2) {
+        while (currentY > 110) {
+            let width = Math.random() * 40 + 70;
+            let currentX = (currentY % 120 === 0) ? 20 : 780 - width;
+            let typeRand = Math.random();
+            let type = typeRand < 0.20 ? 'ice' : 'normal';
+            let platColor = type === 'ice' ? '#8ad1ff' : currentBiome.plat;
+
+            platforms.push({ x: currentX, y: currentY, width: width, height: 20, color: platColor, type: type, timer: 60 });
+            spawnObjectsOnPlatform(currentX, currentY, width);
+            currentY -= 65;
+        }
+    } 
+    else {
+        while (currentY > 110) {
+            let width = Math.random() * 50 + 60;
+            let currentX = Math.random() * (720 - width) + 40;
+            let typeRand = Math.random();
+            let type = 'normal'; let platColor = currentBiome.plat;
+            if (typeRand < 0.15) { type = 'ice'; platColor = '#8ad1ff'; }
+            else if (typeRand < 0.30) { type = 'mud'; platColor = '#3b2618'; }
+            else if (typeRand < 0.45) { type = 'break'; platColor = '#ff9900'; }
+
+            platforms.push({ x: currentX, y: currentY, width: width, height: 20, color: platColor, type: type, timer: 60 });
+            spawnObjectsOnPlatform(currentX, currentY, width);
+            currentY -= 62;
+        }
+    }
+
+    platforms.push({ x: 340, y: 90, width: 120, height: 20, color: currentBiome.plat, type: 'normal' });
+    door = { x: 380, y: 26, width: 40, height: 64, open: false }; 
+    
+    if (Math.random() < 0.5) {
+        chests.push({ x: 345, y: 65, width: 26, height: 25, opened: false });
+    }
+
+    saveProgress();
+}
+
+function spawnObjectsOnPlatform(x, y, w) {
+    let coinsCount = (currentEvent.name === "ЗВЕЗДНЫЙ ДОЖДЬ") ? 2 : 1;
+    for (let i = 0; i < coinsCount; i++) {
+        coins.push({ x: x + (w / (coinsCount + 1)) * (i + 1), y: y - 25, radius: 7, collected: false });
+    }
+
+    let enemyRand = Math.random();
+    if (enemyRand < 0.12) {
+        enemies.push({ x: x + 5, y: y - 26, width: 24, height: 26, vx: 1.1, minX: x, maxX: x + w - 24, type: 'patrol' });
+    } else if (enemyRand < 0.24) {
+        enemies.push({ x: x + w/2 - 10, y: y - 45, width: 20, height: 20, vx: 0.7, minX: x, maxX: x + w - 20, baseScaleY: y - 45, timeTrack: Math.random() * 10, type: 'drone' });
+    } else if (enemyRand < 0.32) {
+        enemies.push({ x: x + w/2 - 12, y: y - 30, width: 24, height: 30, shootCooldown: Math.random() * 90 + 40, type: 'turret' });
+    }
+}function updateShop() {
     skinsGrid.innerHTML = '';
     skinsData.forEach(skin => {
         let isPurchased = purchasedSkins.includes(skin.id);
@@ -159,93 +287,8 @@ function updateShop() {
         skinsGrid.appendChild(card);
     });
 }
-function generateNewLevel() {
-    let biomeIndex = Math.floor((currentLevel - 1) / 3) % biomes.length; 
-    currentBiome = biomes[biomeIndex];
-    
-    let maxAllowedLives = (player.skinId === 'ninja') ? 2 : 3;
-    if (player.lives <= 0 || player.lives > maxAllowedLives) player.lives = maxAllowedLives;
-    
-    player.x = 60; 
-    player.y = 350; 
-    player.vx = 0; 
-    player.vy = 0; 
-    player.jumpCount = 0;
-    player.invulnerable = 60; 
-    player.dashTimer = 0; 
-    player.dashCooldown = 0;
-    player.hookActive = false; 
-    player.parryActive = 0; 
-    player.parryCooldown = 0;
-    comboCount = 0; 
-    comboTimer = 0;
-    
-    isGameOver = false; 
-    overlay.style.display = 'none';
-    standingOnIce = false; 
-    standingOnMud = false;
 
-    let eventRand = Math.random();
-    if (eventRand < 0.15) {
-        currentEvent = { name: "ЗВЕЗДНЫЙ ДОЖДЬ", desc: "С неба падают метеориты! Монет в 2 раза больше" };
-    } else if (eventRand < 0.30) {
-        currentEvent = { name: "ЗОЛОТАЯ ЛИХОРАДКА", desc: "Из сундуков вылетает гора золота" };
-    } else {
-        currentEvent = { name: "НЕТ", desc: "Обычные условия выживания" };
-    }
-
-    platforms = [
-        { x: 0, y: 400, width: 200, height: 100, color: currentBiome.plat, type: 'normal' },
-        { x: 0, y: 0, width: 20, height: 500, color: '#333', type: 'wall' },
-        { x: 780, y: 0, width: 20, height: 500, color: '#333', type: 'wall' }
-    ]; 
-    coins = []; enemies = []; chests = []; bullets = [];
-    
-    let currentX = 240; 
-    let currentY = 380;
-    
-    while (currentX < 680) {
-        let width = Math.random() * 50 + 65;
-        let height = 24;
-        let typeRand = Math.random();
-        let type = 'normal';
-        let platColor = currentBiome.plat;
-
-        if (typeRand < 0.18) { type = 'ice'; platColor = '#8ad1ff'; }
-        else if (typeRand < 0.32) { type = 'mud'; platColor = '#3b2618'; }
-        else if (typeRand < 0.45) { type = 'bounce'; platColor = '#e60067'; }
-        else if (typeRand < 0.55) { type = 'break'; platColor = '#ff9900'; }
-
-        platforms.push({ x: currentX, y: currentY, width: width, height: height, color: platColor, type: type, timer: 60 });
-        
-        let coinsCount = (currentEvent.name === "ЗВЕЗДНЫЙ ДОЖДЬ") ? 3 : 1;
-        for (let i = 0; i < coinsCount; i++) {
-            coins.push({ x: currentX + (width / (coinsCount + 1)) * (i + 1), y: currentY - 25, radius: 7, collected: false });
-        }
-
-        let enemyRand = Math.random();
-        if (enemyRand < 0.20) {
-            enemies.push({ x: currentX + 10, y: currentY - 26, width: 24, height: 26, vx: 1.3, minX: currentX, maxX: currentX + width - 24, type: 'patrol' });
-        } else if (enemyRand < 0.38) {
-            enemies.push({ x: currentX + width/2 - 10, y: currentY - 80, width: 20, height: 20, vx: 1.0, minX: currentX, maxX: currentX + width - 20, baseScaleY: currentY - 80, timeTrack: Math.random() * 10, type: 'drone' });
-        } else if (enemyRand < 0.50) {
-            enemies.push({ x: currentX + width/2 - 12, y: currentY - 30, width: 24, height: 30, shootCooldown: Math.random() * 90 + 30, type: 'turret' });
-        }        
-        currentX += width + Math.random() * 45 + 50;
-        currentY += (Math.random() - 0.5) * 90;
-        if (currentY > 410) currentY = 390;
-        if (currentY < 160) currentY = 220;
-    }
-
-    platforms.push({ x: 680, y: 360, width: 120, height: 140, color: currentBiome.plat, type: 'normal' });
-    door = { x: 725, y: 296, width: 40, height: 64, open: false }; 
-    
-    if (Math.random() < 0.5) {
-        chests.push({ x: 690, y: 335, width: 26, height: 25, opened: false });
-    }
-
-    saveProgress();
-}let reviveTimer = null;
+let reviveTimer = null;
 let timeLeft = 300;
 function startReviveTimer() {
     timeLeft = 300;
@@ -277,7 +320,7 @@ function handleDeath() {
         startReviveTimer();
         updateShop();
     } else {
-        player.x = 60; player.y = 300; player.vx = 0; player.vy = 0;
+        player.x = 385; player.y = 400; player.vx = 0; player.vy = 0;
         player.invulnerable = (player.skinId === 'ghost') ? 120 : 60;
         player.hookActive = false;
     }
@@ -485,7 +528,7 @@ function updateCoinsCheck() {
 
         if (player.y > 500) handleDeath();
 
-        standingOnIce = false; standingOnMud = false; player.onGround = false;platforms.forEach(p => {
+        standingOnIce = false; standingOnMud = false; player.onGround = false;        platforms.forEach(p => {
             ctx.fillStyle = p.color; 
             ctx.fillRect(p.x, p.y, p.width, p.height);
 
