@@ -67,11 +67,10 @@ function resizeCanvas() {
 window.addEventListener('resize', resizeCanvas); window.addEventListener('orientationchange', resizeCanvas);
 resizeCanvas();
 
-localStorage.clear();
-
-let playerLives = 3;
-let score = 0;
-let currentLevel = 1;
+// АНТИ-СБРОС: Убрали clear(), теперь прогресс вытаскивается из памяти вкладки
+let savedLives = localStorage.getItem('p_player_lives'); let playerLives = savedLives !== null ? parseInt(savedLives) : 3;
+let savedScore = localStorage.getItem('p_player_score'); let score = savedScore !== null ? parseInt(savedScore) : 0;
+let savedLevel = localStorage.getItem('p_player_level'); let currentLevel = savedLevel !== null ? parseInt(savedLevel) : 1;
 
 const skinsData = [
     { id: 'lime', name: 'ЛАЙМ', color: 'lime', price: 0, desc: 'Без бонусов' },
@@ -87,9 +86,9 @@ const skinsData = [
     { id: 'matter', name: 'МАТЕРИЯ', color: '#440066', price: 150, desc: 'Классический стиль' }
 ];
 
-let purchasedSkins = ['lime'];
-let currentSkinColor = 'lime';
-let currentSkinId = 'lime';
+let purchasedSkins = JSON.parse(localStorage.getItem('p_purchased_skins')) || ['lime'];
+let currentSkinColor = localStorage.getItem('p_current_skin_color') || 'lime';
+let currentSkinId = localStorage.getItem('p_current_skin_id') || 'lime';
 
 let timeScale = 1.0; 
 let isTimeSlowActive = false;
@@ -100,14 +99,14 @@ let currentEvent = { name: "НЕТ", desc: "Обычные условия" };
 
 const player = { 
     x: 385, y: 350, width: 26, height: 44, 
-    color: 'lime', 
-    skinId: 'lime', 
+    color: currentSkinColor, 
+    skinId: currentSkinId, 
     vx: 0, vy: 0, speed: 5.5, jumpStrength: 13.5, 
     onGround: false, jumpCount: 0, maxJumps: 2, maxLives: 3, invulnerable: 0,
     dashTimer: 0, dashCooldown: 0, dashDir: 0, lastLeftTime: 0, lastRightTime: 0,
     hookActive: false, hookX: 0, hookY: 0, hookLen: 0, hookAngle: 0, hookSpeed: 0,
     parryActive: 0, parryCooldown: 0,
-    lives: 3
+    lives: playerLives
 };
 const gravity = 0.6; const keys = {};
 
@@ -127,12 +126,16 @@ function saveProgress() {
     localStorage.setItem('p_player_lives', player.lives); 
     localStorage.setItem('p_player_score', score); 
     localStorage.setItem('p_player_level', currentLevel); 
+    localStorage.setItem('p_purchased_skins', JSON.stringify(purchasedSkins));
+    localStorage.setItem('p_current_skin_id', player.skinId);
+    localStorage.setItem('p_current_skin_color', player.color);
 }
 
 function generateNewLevel() {
     let biomeIndex = Math.floor((currentLevel - 1) / 3) % biomes.length; 
     currentBiome = biomes[biomeIndex];
     
+    // Проверка лимита жизней ниндзя на новом уровне
     let maxAllowedLives = (player.skinId === 'ninja') ? 2 : 3;
     if (player.lives <= 0 || player.lives > maxAllowedLives) player.lives = maxAllowedLives;
     
@@ -264,7 +267,7 @@ function spawnObjectsOnPlatform(x, y, w) {
     skinsGrid.innerHTML = '';
     skinsData.forEach(skin => {
         let isPurchased = purchasedSkins.includes(skin.id);
-        let isActive = currentSkinId === skin.id;
+        let isActive = player.skinId === skin.id; // Перевели проверку активности на player
         let card = document.createElement('div');
         card.className = `skin-card ${isActive ? 'active' : ''}`;
         card.innerHTML = `
@@ -275,14 +278,18 @@ function spawnObjectsOnPlatform(x, y, w) {
         `;
         card.onclick = () => {
             if (isPurchased) {
-                currentSkinId = skin.id; player.color = skin.color;
-                localStorage.setItem('p_current_skin_id', skin.id); localStorage.setItem('p_current_skin_color', skin.color);
+                // ФИКС: Теперь ID скина гарантированно применяется к игроку
+                player.skinId = skin.id; 
+                player.color = skin.color;
+                if (player.skinId === 'ninja' && player.lives > 2) player.lives = 2;
+                saveProgress();
             } else if (score >= skin.price) {
-                score -= skin.price; purchasedSkins.push(skin.id);
-                currentSkinId = skin.id; player.color = skin.color;
-                localStorage.setItem('p_purchased_skins', JSON.stringify(purchasedSkins));
-                localStorage.setItem('p_current_skin_id', skin.id); localStorage.setItem('p_current_skin_color', skin.color);
-                localStorage.setItem('p_player_score', score);
+                score -= skin.price; 
+                purchasedSkins.push(skin.id);
+                player.skinId = skin.id; 
+                player.color = skin.color;
+                if (player.skinId === 'ninja' && player.lives > 2) player.lives = 2;
+                saveProgress();
             }
             updateShop();
         };
@@ -459,7 +466,8 @@ function updateCoinsCheck() {
     } else {
         door.open = false;
     }
-}function gameLoop() {
+}
+Используйте код с осторожностью.Часть 6 из 7javascriptfunction gameLoop() {
     ctx.fillStyle = currentBiome.bg; ctx.clearRect(0,0,800,500); ctx.fillRect(0,0,800,500);
 
     if (!isGameOver) {
@@ -531,7 +539,8 @@ function updateCoinsCheck() {
         if (player.invulnerable > 0) player.invulnerable--;
         if (player.y > 500) handleDeath();
 
-        standingOnIce = false; standingOnMud = false; player.onGround = false; platforms.forEach(p => {
+        standingOnIce = false; standingOnMud = false; player.onGround = false;
+Используйте код с осторожностью.Часть 7 из 7javascript        platforms.forEach(p => {
             ctx.fillStyle = p.color; 
             ctx.fillRect(p.x, p.y, p.width, p.height);
 
