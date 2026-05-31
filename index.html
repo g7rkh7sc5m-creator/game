@@ -6,11 +6,11 @@
 <title>Хардкорный Рогалик Платформер v17</title>
 <style>
     * { box-sizing: border-box; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: none; }
-    body { background: #0b0b0f; margin: 0; padding: 0; font-family: Arial, sans-serif; overflow: hidden; width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+    body { background: #0b0b0f; margin: 0; padding: 0; font-family: Arial, sans-serif; overflow: hidden; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; }
     
-    /* Контейнер игры жестко центрируется и не выходит за границы дисплея */
-    .game-container { position: relative; width: 100%; max-width: 800px; height: 100%; max-height: 500px; display: flex; justify-content: center; align-items: center; }
-    canvas { background: #111116; display: block; max-width: 100%; max-height: 100%; box-shadow: 0 0 35px rgba(0,0,0,0.9); object-fit: contain; }
+    /* Контейнер и canvas теперь занимают честные 100% экрана смартфона */
+    .game-container { position: relative; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; }
+    canvas { background: #111116; display: block; width: 100vw; height: 100vh; }
     
     .game-over-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5, 5, 10, 0.96); display: none; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 5; padding: 15px; overflow-y: auto; }
     .game-over-overlay h1 { color: #ff3333; margin: 0 0 5px 0; font-size: 26px; text-shadow: 0 0 15px rgba(255,0,0,0.6); }
@@ -32,19 +32,18 @@
     .skin-desc { font-size: 8px; color: #9aa; text-align: center; margin-bottom: 3px; line-height: 1; min-height: 16px; }
     .skin-price { font-size: 9px; color: #ffcc00; font-weight: bold; }
     
-    /* ФИКС: Кнопки привязаны к нижней части игрового экрана, а не окна браузера */
-    .mobile-ui { position: absolute; bottom: 10px; left: 0; right: 0; display: flex; justify-content: space-between; padding: 0 15px; width: 100%; pointer-events: none; z-index: 10; }
-    .move-group, .action-group { display: flex; gap: 8px; pointer-events: auto; align-items: flex-end; }
+    /* Сенсорные кнопки поверх полноэкранного Canvas */
+    .mobile-ui { position: absolute; bottom: 30px; left: 0; right: 0; display: flex; justify-content: space-between; padding: 0 30px; width: 100%; pointer-events: none; z-index: 2; }
+    .move-group, .action-group { display: flex; gap: 16px; pointer-events: auto; align-items: flex-end; }
     
-    /* Уменьшили размер кнопок под мобильные пальцы, чтобы они не перекрывали центр */
-    .touch-btn { background: rgba(255, 255, 255, 0.15); color: white; border: 1.5px solid rgba(255, 255, 255, 0.4); width: 48px; height: 48px; border-radius: 50%; font-size: 18px; font-weight: bold; display: flex; justify-content: center; align-items: center; cursor: pointer; pointer-events: auto; -webkit-tap-highlight-color: transparent; }
+    .touch-btn { background: rgba(255, 255, 255, 0.15); color: white; border: 2px solid rgba(255, 255, 255, 0.4); width: 65px; height: 65px; border-radius: 50%; font-size: 22px; font-weight: bold; display: flex; justify-content: center; align-items: center; cursor: pointer; pointer-events: auto; -webkit-tap-highlight-color: transparent; }
     .touch-btn:active { background: rgba(255, 255, 255, 0.4); }
     
-    .jump-btn { width: 56px; height: 56px; background: rgba(0, 255, 0, 0.2); border-color: lime; color: lime; font-size: 12px; }
+    .jump-btn { width: 75px; height: 75px; background: rgba(0, 255, 0, 0.18); border-color: lime; color: lime; font-size: 14px; }
     .jump-btn:active { background: rgba(0, 255, 0, 0.5); }
     
-    .download-container { position: absolute; top: 10px; right: 10px; z-index: 20; }
-    .download-btn { background-color: lime; color: #111; border: none; padding: 6px 12px; font-size: 12px; font-weight: bold; border-radius: 4px; cursor: pointer; }
+    .download-container { position: absolute; top: 10px; right: 10px; z-index: 10; }
+    .download-btn { background-color: lime; color: #111; border: none; padding: 8px 15px; font-size: 14px; font-weight: bold; border-radius: 5px; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -60,19 +59,17 @@
         <div class="shop-title">МАГАЗИН СКИНОВ С ПАССИВКАМИ</div>
         <div class="skins-grid" id="skinsGrid"></div>
     </div>
-    
-    <!-- Перенесли блок mobile-ui внутрь контейнера, чтобы кнопки не улетали за рамки игры -->
-    <div class="mobile-ui">
-        <div class="move-group">
-            <div class="touch-btn" id="btnLeft">←</div>
-            <div class="touch-btn" id="btnRight">→</div>
-        </div>
-        <div class="action-group">
-            <div class="touch-btn" id="btnHook" style="background:rgba(255,255,0,0.15); border-color:yellow; color:yellow; font-size:10px;">КРЮК</div>
-            <div class="touch-btn" id="btnParry" style="background:rgba(255,0,0,0.15); border-color:red; color:red; font-size:10px;">ЩИТ</div>
-            <div class="touch-btn" id="btnDash" style="background:rgba(0,150,255,0.15); border-color:#00aeff; color:#00aeff; font-size:10px;">РЫВОК</div>
-            <div class="touch-btn jump-btn" id="btnJump">ВВЕРХ</div>
-        </div>
+</div>
+<div class="mobile-ui">
+    <div class="move-group">
+        <div class="touch-btn" id="btnLeft">←</div>
+        <div class="touch-btn" id="btnRight">→</div>
+    </div>
+    <div class="action-group">
+        <div class="touch-btn" id="btnHook" style="background:rgba(255,255,0,0.15); border-color:yellow; color:yellow; font-size:11px;">КРЮК</div>
+        <div class="touch-btn" id="btnParry" style="background:rgba(255,0,0,0.15); border-color:red; color:red; font-size:11px;">ЩИТ</div>
+        <div class="touch-btn" id="btnDash" style="background:rgba(0,150,255,0.15); border-color:#00aeff; color:#00aeff; font-size:11px;">РЫВОК</div>
+        <div class="touch-btn jump-btn" id="btnJump">ВВЕРХ</div>
     </div>
 </div>
 <script>const canvas = document.getElementById('gameCanvas'); const ctx = canvas.getContext('2d');
@@ -80,9 +77,8 @@ const overlay = document.getElementById('gameOverOverlay'); const timerText = do
 const skinsGrid = document.getElementById('skinsGrid'); const metaUpgradesGrid = document.getElementById('metaUpgradesGrid');
 
 function resizeCanvas() {
-    const targetWidth = 800; const targetHeight = 500; const windowWidth = window.innerWidth; const windowHeight = window.innerHeight;
-    let scale = Math.min(windowWidth / targetWidth, windowHeight / targetHeight);
-    canvas.width = targetWidth; canvas.height = targetHeight; canvas.style.width = (targetWidth * scale) + 'px'; canvas.style.height = (targetHeight * scale) + 'px';
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 }
 window.addEventListener('resize', resizeCanvas); window.addEventListener('orientationchange', resizeCanvas);
 resizeCanvas();
@@ -116,7 +112,7 @@ let timeScale = 1.0; let isTimeSlowActive = false; let slowModeTimer = 0;
 let comboCount = 0; let comboTimer = 0; let currentEvent = { name: "НЕТ", desc: "Обычные условия" };
 
 const player = { 
-    x: 385, y: 350, width: 26, height: 44, color: currentSkinColor, skinId: currentSkinId, 
+    x: 0, y: 0, width: 26, height: 44, color: currentSkinColor, skinId: currentSkinId, 
     vx: 0, vy: 0, speed: 5.5, jumpStrength: 13.5, onGround: false, jumpCount: 0, maxJumps: 2, invulnerable: 0,
     dashTimer: 0, dashCooldown: 0, dashDir: 0, lastLeftTime: 0, lastRightTime: 0,
     hookActive: false, hookX: 0, hookY: 0, hookLen: 0, hookAngle: 0, hookSpeed: 0,
@@ -158,7 +154,9 @@ function generateNewLevel() {
     maxAllowedLives += upgradeHealth;
     player.lives = maxAllowedLives;
     
-    player.x = 385; player.y = 350; player.vx = 0; player.vy = 0; player.jumpCount = 0;
+    player.x = canvas.width / 2 - 13; 
+    player.y = canvas.height - 100; 
+    player.vx = 0; player.vy = 0; player.jumpCount = 0;
     player.invulnerable = 60; player.dashTimer = 0; player.dashCooldown = 0;
     player.hookActive = false; player.parryActive = 0; player.parryCooldown = 0;
     comboCount = 0; comboTimer = 0; isGameOver = false; overlay.style.display = 'none';
@@ -174,25 +172,25 @@ function generateNewLevel() {
     }
 
     platforms = [
-        { x: 0, y: 450, width: 800, height: 50, color: currentBiome.plat, type: 'normal' },
-        { x: 0, y: 0, width: 20, height: 500, color: '#333', type: 'wall' },
-        { x: 780, y: 0, width: 20, height: 500, color: '#333', type: 'wall' }
+        { x: 0, y: canvas.height - 50, width: canvas.width, height: 50, color: currentBiome.plat, type: 'normal' },
+        { x: 0, y: 0, width: 20, height: canvas.height, color: '#333', type: 'wall' },
+        { x: canvas.width - 20, y: 0, width: 20, height: canvas.height, color: '#333', type: 'wall' }
     ]; 
     coins = []; enemies = []; chests = []; bullets = []; spikes = [];
     
     if (currentLevel % 5 === 0) {
         currentEvent = { name: "БИТВА С БОССОМ", desc: "Уничтожьте Кибер-Глаз!" };
-        boss = { x: 350, y: 120, width: 100, height: 80, hp: 100, maxHp: 100, attackTimer: 90, phase: 1, vx: 2 };
-        door = { x: 380, y: 386, width: 44, height: 64, open: false };
+        boss = { x: canvas.width / 2 - 50, y: 120, width: 100, height: 80, hp: 100, maxHp: 100, attackTimer: 90, phase: 1, vx: 2 };
+        door = { x: canvas.width / 2 - 22, y: canvas.height - 114, width: 44, height: 64, open: false };
         saveProgress();
         return;
     }
 
-    let currentY = 380;
+    let currentY = canvas.height - 120;
     let levelStyle = Math.floor(Math.random() * 4);
     
     if (levelStyle === 0) {
-        let currentX = 200;
+        let currentX = canvas.width / 4;
         while (currentY > 110) {
             let width = Math.random() * 40 + 80;
             let typeRand = Math.random();
@@ -205,15 +203,15 @@ function generateNewLevel() {
             spawnObjectsOnPlatform(currentX, currentY, width);
             currentX += (Math.random() > 0.5 ? 160 : -160);
             if (currentX < 40) currentX = 140;
-            if (currentX > 640) currentX = 500;
+            if (currentX > canvas.width - 40 - width) currentX = canvas.width - 160 - width;
             currentY -= 65;
         }
     } 
     else if (levelStyle === 1) {
-        platforms.push({ x: 350, y: 160, width: 100, height: 220, color: currentBiome.plat, type: 'normal' });
+        platforms.push({ x: canvas.width / 2 - 50, y: 160, width: 100, height: 220, color: currentBiome.plat, type: 'normal' });
         while (currentY > 110) {
             let width = Math.random() * 30 + 55;
-            let currentX = (currentY % 130 === 0) ? Math.random() * 120 + 50 : Math.random() * 120 + 580;
+            let currentX = (currentY % 130 === 0) ? Math.random() * 120 + 50 : canvas.width - 170 - Math.random() * 120;
             let typeRand = Math.random();
             let type = typeRand < 0.25 ? 'bounce' : 'normal';
             let platColor = type === 'bounce' ? '#e60067' : currentBiome.plat;
@@ -226,7 +224,7 @@ function generateNewLevel() {
     else if (levelStyle === 2) {
         while (currentY > 110) {
             let width = Math.random() * 40 + 70;
-            let currentX = (currentY % 120 === 0) ? 20 : 780 - width;
+            let currentX = (currentY % 120 === 0) ? 20 : canvas.width - 20 - width;
             let typeRand = Math.random();
             let type = typeRand < 0.20 ? 'ice' : 'normal';
             let platColor = type === 'ice' ? '#8ad1ff' : currentBiome.plat;
@@ -239,7 +237,7 @@ function generateNewLevel() {
     else {
         while (currentY > 110) {
             let width = Math.random() * 50 + 60;
-            let currentX = Math.random() * (720 - width) + 40;
+            let currentX = Math.random() * (canvas.width - 80 - width) + 40;
             let typeRand = Math.random();
             let type = 'normal'; let platColor = currentBiome.plat;
             if (typeRand < 0.15) { type = 'ice'; platColor = '#8ad1ff'; }
@@ -252,11 +250,11 @@ function generateNewLevel() {
         }
     }
 
-    platforms.push({ x: 340, y: 90, width: 120, height: 20, color: currentBiome.plat, type: 'normal' });
-    door = { x: 380, y: 26, width: 40, height: 64, open: false }; 
+    platforms.push({ x: canvas.width / 2 - 60, y: 90, width: 120, height: 20, color: currentBiome.plat, type: 'normal' });
+    door = { x: canvas.width / 2 - 20, y: 26, width: 40, height: 64, open: false }; 
     
     if (Math.random() < 0.5) {
-        chests.push({ x: 345, y: 65, width: 26, height: 25, opened: false });
+        chests.push({ x: canvas.width / 2 - 55, y: 65, width: 26, height: 25, opened: false });
     }
 
     saveProgress();
@@ -375,7 +373,7 @@ function handleDeath() {
         startReviveTimer();
         updateShop();
     } else {
-        player.x = 385; player.y = 350; player.vx = 0; player.vy = 0;
+        player.x = canvas.width / 2 - 13; player.y = canvas.height - 100; player.vx = 0; player.vy = 0;
         player.invulnerable = (player.skinId === 'ghost') ? 120 : 60;
         player.hookActive = false;
     }
@@ -516,7 +514,7 @@ function updateCoinsCheck() {
         return;
     }
 
-    ctx.fillStyle = currentBiome.bg; ctx.clearRect(0,0,800,500); ctx.fillRect(0,0,800,500);
+    ctx.fillStyle = currentBiome.bg; ctx.clearRect(0,0,canvas.width,canvas.height); ctx.fillRect(0,0,canvas.width,canvas.height);
 
     if (!isGameOver) {
         if (player.dashCooldown > 0) player.dashCooldown--;
@@ -585,13 +583,13 @@ function updateCoinsCheck() {
         }
 
         if (player.invulnerable > 0) player.invulnerable--;
-        if (player.y > 500) handleDeath();
+        if (player.y > canvas.height) handleDeath();
 
         standingOnIce = false; standingOnMud = false; player.onGround = false;
 
         if (boss) {
             boss.x += boss.vx;
-            if (boss.x < 40 || boss.x > 760 - boss.width) boss.vx *= -1;
+            if (boss.x < 40 || boss.x > canvas.width - 40 - boss.width) boss.vx *= -1;
             boss.attackTimer--;
             if (boss.attackTimer <= 0) {
                 let count = boss.hp < 50 ? 5 : 3;
@@ -602,7 +600,7 @@ function updateCoinsCheck() {
                 boss.attackTimer = boss.hp < 50 ? 60 : 90;
             }
             if (Math.random() < 0.015 && boss.hp < 50) {
-                enemies.push({ x: boss.x + boss.width / 2, y: boss.y + boss.height, width: 20, height: 20, vx: Math.random() > 0.5 ? 1 : -1, minX: 40, maxX: 740, baseScaleY: 300, timeTrack: 0, type: 'drone' });
+                enemies.push({ x: boss.x + boss.width / 2, y: boss.y + boss.height, width: 20, height: 20, vx: Math.random() > 0.5 ? 1 : -1, minX: 40, maxX: canvas.width - 40, baseScaleY: canvas.height - 200, timeTrack: 0, type: 'drone' });
             }
         }        platforms.forEach(p => {
             ctx.fillStyle = p.color; 
@@ -690,7 +688,7 @@ function updateCoinsCheck() {
                 } else if (player.invulnerable <= 0) { handleDeath(); }
             }
         });
-        bullets = bullets.filter(b => b.x > 0 && b.x < 800 && b.y > 0 && b.y < 500);
+        bullets = bullets.filter(b => b.x > 0 && b.x < canvas.width && b.y > 0 && b.y < canvas.height);
 
         enemies.forEach(e => {
             if (e.type === 'patrol') {
@@ -739,7 +737,7 @@ function updateCoinsCheck() {
         }
 
         if (currentEvent.name === "ЗВЕЗДНЫЙ ДОЖДЬ" && Math.random() < 0.02) {
-            bullets.push({ x: Math.random() * 740 + 20, y: 10, vx: (Math.random() - 0.5) * 2, vy: 4 });
+            bullets.push({ x: Math.random() * (canvas.width - 40) + 20, y: 10, vx: (Math.random() - 0.5) * 2, vy: 4 });
         }
 
         dashEchoes.forEach(echo => {
@@ -767,9 +765,11 @@ function updateCoinsCheck() {
 
         if (boss) {
             ctx.fillStyle = '#ff0055'; ctx.fillRect(boss.x, boss.y, boss.width, boss.height);
-            ctx.fillStyle = '#222'; ctx.fillRect(200, 20, 400, 14);
-            ctx.fillStyle = '#ff0055'; ctx.fillRect(200, 20, 400 * (boss.hp / boss.maxHp), 14);
-            ctx.fillStyle = '#fff'; ctx.font = "bold 10px Arial"; ctx.fillText("КИБЕР-ГЛАЗ", 370, 31);
+            let barW = Math.min(400, canvas.width - 40);
+            let barX = canvas.width / 2 - barW / 2;
+            ctx.fillStyle = '#222'; ctx.fillRect(barX, 20, barW, 14);
+            ctx.fillStyle = '#ff0055'; ctx.fillRect(barX, 20, barW * (boss.hp / boss.maxHp), 14);
+            ctx.fillStyle = '#fff'; ctx.font = "bold 10px Arial"; ctx.fillText("КИБЕР-ГЛАЗ", canvas.width / 2 - 30, 31);
         }
 
         ctx.fillStyle = door.open ? currentBiome.door : '#444444'; ctx.fillRect(door.x, door.y, door.width, door.height);
@@ -793,7 +793,7 @@ function updateCoinsCheck() {
     }
 
     ctx.fillStyle = "#888"; ctx.font = "11px Arial";
-    ctx.fillText(`СОБЫТИЕ: ${currentEvent.name} (${currentEvent.desc})`, 20, 485);
+    ctx.fillText(`СОБЫТИЕ: ${currentEvent.name} (${currentEvent.desc})`, 20, canvas.height - 15);
 
     requestAnimationFrame(gameLoop);
 }
