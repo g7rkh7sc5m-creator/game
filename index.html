@@ -5,10 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <title>Хардкорный Рогалик Платформер v17</title>
 <style>
-    * { box-sizing: border-box; }
-    body { background: #0b0b0f; margin: 0; padding: 0; font-family: Arial, sans-serif; overflow: hidden; width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: manipulation; }
-    .game-container { position: relative; max-width: 100%; max-height: 100%; }
-    canvas { background: #111116; display: block; max-width: 100%; max-height: 100%; box-shadow: 0 0 35px rgba(0,0,0,0.9); }
+    * { box-sizing: border-box; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: none; }
+    body { background: #0b0b0f; margin: 0; padding: 0; font-family: Arial, sans-serif; overflow: hidden; width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+    
+    /* Контейнер игры жестко центрируется и не выходит за границы дисплея */
+    .game-container { position: relative; width: 100%; max-width: 800px; height: 100%; max-height: 500px; display: flex; justify-content: center; align-items: center; }
+    canvas { background: #111116; display: block; max-width: 100%; max-height: 100%; box-shadow: 0 0 35px rgba(0,0,0,0.9); object-fit: contain; }
+    
     .game-over-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5, 5, 10, 0.96); display: none; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 5; padding: 15px; overflow-y: auto; }
     .game-over-overlay h1 { color: #ff3333; margin: 0 0 5px 0; font-size: 26px; text-shadow: 0 0 15px rgba(255,0,0,0.6); }
     .timer-text { font-size: 16px; font-weight: bold; margin: 3px 0; color: #ffcc00; }
@@ -28,14 +31,20 @@
     .skin-name { font-size: 9px; font-weight: bold; margin-bottom: 2px; text-align: center; }
     .skin-desc { font-size: 8px; color: #9aa; text-align: center; margin-bottom: 3px; line-height: 1; min-height: 16px; }
     .skin-price { font-size: 9px; color: #ffcc00; font-weight: bold; }
-    .mobile-ui { position: absolute; bottom: 20px; left: 0; right: 0; display: flex; justify-content: space-between; padding: 0 20px; width: 100%; pointer-events: none; z-index: 2; }
-    .move-group, .action-group { display: flex; gap: 12px; pointer-events: auto; align-items: flex-end; }
-    .touch-btn { background: rgba(255, 255, 255, 0.12); color: white; border: 2px solid rgba(255, 255, 255, 0.35); width: 60px; height: 60px; border-radius: 50%; font-size: 22px; font-weight: bold; display: flex; justify-content: center; align-items: center; cursor: pointer; pointer-events: auto; }
+    
+    /* ФИКС: Кнопки привязаны к нижней части игрового экрана, а не окна браузера */
+    .mobile-ui { position: absolute; bottom: 10px; left: 0; right: 0; display: flex; justify-content: space-between; padding: 0 15px; width: 100%; pointer-events: none; z-index: 10; }
+    .move-group, .action-group { display: flex; gap: 8px; pointer-events: auto; align-items: flex-end; }
+    
+    /* Уменьшили размер кнопок под мобильные пальцы, чтобы они не перекрывали центр */
+    .touch-btn { background: rgba(255, 255, 255, 0.15); color: white; border: 1.5px solid rgba(255, 255, 255, 0.4); width: 48px; height: 48px; border-radius: 50%; font-size: 18px; font-weight: bold; display: flex; justify-content: center; align-items: center; cursor: pointer; pointer-events: auto; -webkit-tap-highlight-color: transparent; }
     .touch-btn:active { background: rgba(255, 255, 255, 0.4); }
-    .jump-btn { width: 75px; height: 75px; background: rgba(0, 255, 0, 0.18); border-color: lime; color: lime; font-size: 14px; }
+    
+    .jump-btn { width: 56px; height: 56px; background: rgba(0, 255, 0, 0.2); border-color: lime; color: lime; font-size: 12px; }
     .jump-btn:active { background: rgba(0, 255, 0, 0.5); }
-    .download-container { position: absolute; top: 10px; right: 10px; z-index: 10; }
-    .download-btn { background-color: lime; color: #111; border: none; padding: 8px 15px; font-size: 14px; font-weight: bold; border-radius: 5px; cursor: pointer; }
+    
+    .download-container { position: absolute; top: 10px; right: 10px; z-index: 20; }
+    .download-btn { background-color: lime; color: #111; border: none; padding: 6px 12px; font-size: 12px; font-weight: bold; border-radius: 4px; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -51,17 +60,19 @@
         <div class="shop-title">МАГАЗИН СКИНОВ С ПАССИВКАМИ</div>
         <div class="skins-grid" id="skinsGrid"></div>
     </div>
-</div>
-<div class="mobile-ui">
-    <div class="move-group">
-        <div class="touch-btn" id="btnLeft">←</div>
-        <div class="touch-btn" id="btnRight">→</div>
-    </div>
-    <div class="action-group">
-        <div class="touch-btn" id="btnHook" style="background:rgba(255,255,0,0.15); border-color:yellow; color:yellow; font-size:12px;">КРЮК</div>
-        <div class="touch-btn" id="btnParry" style="background:rgba(255,0,0,0.15); border-color:red; color:red; font-size:12px;">ЩИТ</div>
-        <div class="touch-btn" id="btnDash" style="background:rgba(0,150,255,0.15); border-color:#00aeff; color:#00aeff; font-size:12px;">РЫВОК</div>
-        <div class="touch-btn jump-btn" id="btnJump">ВВЕРХ</div>
+    
+    <!-- Перенесли блок mobile-ui внутрь контейнера, чтобы кнопки не улетали за рамки игры -->
+    <div class="mobile-ui">
+        <div class="move-group">
+            <div class="touch-btn" id="btnLeft">←</div>
+            <div class="touch-btn" id="btnRight">→</div>
+        </div>
+        <div class="action-group">
+            <div class="touch-btn" id="btnHook" style="background:rgba(255,255,0,0.15); border-color:yellow; color:yellow; font-size:10px;">КРЮК</div>
+            <div class="touch-btn" id="btnParry" style="background:rgba(255,0,0,0.15); border-color:red; color:red; font-size:10px;">ЩИТ</div>
+            <div class="touch-btn" id="btnDash" style="background:rgba(0,150,255,0.15); border-color:#00aeff; color:#00aeff; font-size:10px;">РЫВОК</div>
+            <div class="touch-btn jump-btn" id="btnJump">ВВЕРХ</div>
+        </div>
     </div>
 </div>
 <script>const canvas = document.getElementById('gameCanvas'); const ctx = canvas.getContext('2d');
