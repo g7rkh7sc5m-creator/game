@@ -3,29 +3,36 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>Хардкорный Платформер v16</title>
+<title>Хардкорный Рогалик Платформер v17</title>
 <style>
     * { box-sizing: border-box; }
-    body { background: #111; margin: 0; padding: 0; font-family: Arial, sans-serif; overflow: hidden; width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: manipulation; }
+    body { background: #0b0b0f; margin: 0; padding: 0; font-family: Arial, sans-serif; overflow: hidden; width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: manipulation; }
     .game-container { position: relative; max-width: 100%; max-height: 100%; }
-    canvas { background: #151515; display: block; max-width: 100%; max-height: 100%; box-shadow: 0 0 25px rgba(0,0,0,0.8); }
-    .game-over-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95); display: none; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 5; padding: 15px; }
-    .game-over-overlay h1 { color: #ff3333; margin: 0 0 5px 0; font-size: 26px; text-shadow: 0 0 10px rgba(255,0,0,0.5); }
-    .timer-text { font-size: 18px; font-weight: bold; margin: 5px 0; color: #ffcc00; }
-    .test-revive-btn { background: gold; color: #111; border: none; padding: 10px 20px; font-weight: bold; border-radius: 5px; cursor: pointer; font-size: 14px; margin-bottom: 15px; }
-    .shop-title { font-size: 15px; color: #aaa; margin-bottom: 10px; font-weight: bold; letter-spacing: 1px; }
-    .skins-grid { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; max-width: 500px; }
-    .skin-card { background: #2a2a2a; border: 2px solid #444; border-radius: 8px; padding: 6px; display: flex; flex-direction: column; align-items: center; width: 90px; cursor: pointer; }
-    .skin-card.active { border-color: lime; background: #2d3d2d; }
-    .skin-preview { width: 20px; height: 30px; margin-bottom: 5px; border-radius: 3px; position: relative; }
+    canvas { background: #111116; display: block; max-width: 100%; max-height: 100%; box-shadow: 0 0 35px rgba(0,0,0,0.9); }
+    .game-over-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5, 5, 10, 0.96); display: none; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 5; padding: 15px; overflow-y: auto; }
+    .game-over-overlay h1 { color: #ff3333; margin: 0 0 5px 0; font-size: 26px; text-shadow: 0 0 15px rgba(255,0,0,0.6); }
+    .timer-text { font-size: 16px; font-weight: bold; margin: 3px 0; color: #ffcc00; }
+    .test-revive-btn { background: gold; color: #111; border: none; padding: 8px 18px; font-weight: bold; border-radius: 5px; cursor: pointer; font-size: 13px; margin-bottom: 10px; }
+    .meta-shop-title { font-size: 14px; color: #00ffcc; margin: 5px 0; font-weight: bold; letter-spacing: 1px; text-shadow: 0 0 8px rgba(0,255,200,0.3); }
+    .meta-upgrades-grid { display: flex; gap: 8px; justify-content: center; margin-bottom: 15px; flex-wrap: wrap; max-width: 500px; }
+    .upgrade-card { background: #1a1a24; border: 1px solid #334; border-radius: 6px; padding: 6px; display: flex; flex-direction: column; align-items: center; width: 140px; cursor: pointer; text-align: center; }
+    .upgrade-card:hover { border-color: #00ffcc; }
+    .upgrade-name { font-size: 10px; font-weight: bold; color: #fff; }
+    .upgrade-level { font-size: 9px; color: #889; margin: 2px 0; }
+    .upgrade-price { font-size: 10px; color: #ffcc00; font-weight: bold; }
+    .shop-title { font-size: 13px; color: #aaa; margin-bottom: 5px; font-weight: bold; letter-spacing: 1px; }
+    .skins-grid { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; max-width: 550px; }
+    .skin-card { background: #16161f; border: 2px solid #334; border-radius: 6px; padding: 5px; display: flex; flex-direction: column; align-items: center; width: 85px; cursor: pointer; }
+    .skin-card.active { border-color: lime; background: #1a2e1a; }
+    .skin-preview { width: 18px; height: 26px; margin-bottom: 4px; border-radius: 3px; position: relative; }
     .skin-name { font-size: 9px; font-weight: bold; margin-bottom: 2px; text-align: center; }
-    .skin-desc { font-size: 8px; color: #aaa; text-align: center; margin-bottom: 4px; line-height: 1; min-height: 16px; }
-    .skin-price { font-size: 10px; color: #ffcc00; font-weight: bold; }
+    .skin-desc { font-size: 8px; color: #9aa; text-align: center; margin-bottom: 3px; line-height: 1; min-height: 16px; }
+    .skin-price { font-size: 9px; color: #ffcc00; font-weight: bold; }
     .mobile-ui { position: absolute; bottom: 20px; left: 0; right: 0; display: flex; justify-content: space-between; padding: 0 20px; width: 100%; pointer-events: none; z-index: 2; }
     .move-group, .action-group { display: flex; gap: 12px; pointer-events: auto; align-items: flex-end; }
-    .touch-btn { background: rgba(255, 255, 255, 0.15); color: white; border: 2px solid rgba(255, 255, 255, 0.4); width: 60px; height: 60px; border-radius: 50%; font-size: 22px; font-weight: bold; display: flex; justify-content: center; align-items: center; cursor: pointer; pointer-events: auto; }
+    .touch-btn { background: rgba(255, 255, 255, 0.12); color: white; border: 2px solid rgba(255, 255, 255, 0.35); width: 60px; height: 60px; border-radius: 50%; font-size: 22px; font-weight: bold; display: flex; justify-content: center; align-items: center; cursor: pointer; pointer-events: auto; }
     .touch-btn:active { background: rgba(255, 255, 255, 0.4); }
-    .jump-btn { width: 75px; height: 75px; background: rgba(0, 255, 0, 0.2); border-color: lime; color: lime; font-size: 14px; }
+    .jump-btn { width: 75px; height: 75px; background: rgba(0, 255, 0, 0.18); border-color: lime; color: lime; font-size: 14px; }
     .jump-btn:active { background: rgba(0, 255, 0, 0.5); }
     .download-container { position: absolute; top: 10px; right: 10px; z-index: 10; }
     .download-btn { background-color: lime; color: #111; border: none; padding: 8px 15px; font-size: 14px; font-weight: bold; border-radius: 5px; cursor: pointer; }
@@ -36,9 +43,11 @@
 <div class="game-container" id="gameContainer">
     <canvas id="gameCanvas"></canvas>
     <div class="game-over-overlay" id="gameOverOverlay">
-        <h1>ЖИЗНИ ЗАКОНЧИЛИСЬ</h1>
+        <h1>РЕЗУЛЬТАТ ЗАБЕГА</h1>
         <div class="timer-text" id="timerText">05:00</div>
         <button class="test-revive-btn" id="testReviveBtn">Восстановить за 100 🪙</button>
+        <div class="meta-shop-title">ПОСТОЯННЫЕ ТАЛАНТЫ</div>
+        <div class="meta-upgrades-grid" id="metaUpgradesGrid"></div>
         <div class="shop-title">МАГАЗИН СКИНОВ С ПАССИВКАМИ</div>
         <div class="skins-grid" id="skinsGrid"></div>
     </div>
@@ -57,7 +66,8 @@
     </div>
 </div>
 <script>const canvas = document.getElementById('gameCanvas'); const ctx = canvas.getContext('2d');
-const overlay = document.getElementById('gameOverOverlay'); const timerText = document.getElementById('timerText'); const skinsGrid = document.getElementById('skinsGrid');
+const overlay = document.getElementById('gameOverOverlay'); const timerText = document.getElementById('timerText'); 
+const skinsGrid = document.getElementById('skinsGrid'); const metaUpgradesGrid = document.getElementById('metaUpgradesGrid');
 
 function resizeCanvas() {
     const targetWidth = 800; const targetHeight = 500; const windowWidth = window.innerWidth; const windowHeight = window.innerHeight;
@@ -67,9 +77,13 @@ function resizeCanvas() {
 window.addEventListener('resize', resizeCanvas); window.addEventListener('orientationchange', resizeCanvas);
 resizeCanvas();
 
-let savedLives = localStorage.getItem('p_player_lives'); let playerLives = savedLives !== null ? parseInt(savedLives) : 3;
-let savedScore = localStorage.getItem('p_player_score'); let score = savedScore !== null ? parseInt(savedScore) : 0;
-let savedLevel = localStorage.getItem('p_player_level'); let currentLevel = savedLevel !== null ? parseInt(savedLevel) : 1;
+let savedScore = localStorage.getItem('meta_player_score'); let score = savedScore !== null ? parseInt(savedScore) : 0;
+let savedLevel = localStorage.getItem('meta_player_level'); let currentLevel = savedLevel !== null ? parseInt(savedLevel) : 1;
+
+// Мета-прокачка (Таланты)
+let upgradeArmor = parseInt(localStorage.getItem('meta_upg_armor')) || 0;
+let upgradeMagnet = parseInt(localStorage.getItem('meta_upg_magnet')) || 0;
+let upgradeHealth = parseInt(localStorage.getItem('meta_upg_health')) || 0;
 
 const skinsData = [
     { id: 'lime', name: 'ЛАЙМ', color: 'lime', price: 0, desc: 'Без бонусов' },
@@ -85,49 +99,47 @@ const skinsData = [
     { id: 'matter', name: 'МАТЕРИЯ', color: '#440066', price: 150, desc: 'Классический стиль' }
 ];
 
-let purchasedSkins = JSON.parse(localStorage.getItem('p_purchased_skins')) || ['lime'];
-let currentSkinColor = localStorage.getItem('p_current_skin_color') || 'lime';
-let currentSkinId = localStorage.getItem('p_current_skin_id') || 'lime';
+let purchasedSkins = JSON.parse(localStorage.getItem('meta_purchased_skins')) || ['lime'];
+let currentSkinColor = localStorage.getItem('meta_current_skin_color') || 'lime';
+let currentSkinId = localStorage.getItem('meta_current_skin_id') || 'lime';
 
-let timeScale = 1.0; 
-let isTimeSlowActive = false;
-let slowModeTimer = 0;
-let comboCount = 0;
-let comboTimer = 0;
-let currentEvent = { name: "НЕТ", desc: "Обычные условия" };
+let timeScale = 1.0; let isTimeSlowActive = false; let slowModeTimer = 0;
+let comboCount = 0; let comboTimer = 0; let currentEvent = { name: "НЕТ", desc: "Обычные условия" };
 
 const player = { 
-    x: 385, y: 350, width: 26, height: 44, 
-    color: currentSkinColor, 
-    skinId: currentSkinId, 
-    vx: 0, vy: 0, speed: 5.5, jumpStrength: 13.5, 
-    onGround: false, jumpCount: 0, maxJumps: 2, maxLives: 3, invulnerable: 0,
+    x: 385, y: 350, width: 26, height: 44, color: currentSkinColor, skinId: currentSkinId, 
+    vx: 0, vy: 0, speed: 5.5, jumpStrength: 13.5, onGround: false, jumpCount: 0, maxJumps: 2, invulnerable: 0,
     dashTimer: 0, dashCooldown: 0, dashDir: 0, lastLeftTime: 0, lastRightTime: 0,
     hookActive: false, hookX: 0, hookY: 0, hookLen: 0, hookAngle: 0, hookSpeed: 0,
-    parryActive: 0, parryCooldown: 0,
-    lives: playerLives
+    parryActive: 0, parryCooldown: 0, lives: 3
 };
-const gravity = 0.6; const keys = {};
 
-let platforms = []; let coins = []; let enemies = []; let chests = []; let bullets = [];
-let door = { x: 0, y: 0, width: 44, height: 64, open: false }; 
-let isGameOver = false;
-let standingOnIce = false; let standingOnMud = false;const biomes = [
-    { name: "КЛАССИЧЕСКИЙ МИР", bg: "#151515", plat: "#5c3a21", coin: "gold", door: "#00ffcc" },
-    { name: "ИЗУМРУДНЫЙ ЛЕС", bg: "#0d1b12", plat: "#22442b", coin: "#39ff14", door: "#ccff00" },
-    { name: "НЕОНОВЫЙ КИБЕР", bg: "#0c0514", plat: "#bd0042", coin: "#00ffff", door: "#d600ff" },
-    { name: "ЛЕДЯНАЯ БЕЗДНА", bg: "#060f17", plat: "#2b435c", coin: "#ffffff", door: "#0099ff" },
-    { name: "ВУЛКАНИЧЕСКИЙ АД", bg: "#140707", plat: "#3b0f0f", coin: "#ff4500", door: "#ffcc00" }
+const gravity = 0.6; const keys = {};
+let platforms = []; let coins = []; let enemies = []; let chests = []; let bullets = []; let spikes = [];
+let door = { x: 0, y: 0, width: 44, height: 64, open: false }; let isGameOver = false; let standingOnIce = false; let standingOnMud = false;
+
+// Системы Босса и Частиц
+let boss = null;
+let particles = [];
+let dashEchoes = [];
+let freezeFrame = 0;const biomes = [
+    { name: "КЛАССИЧЕСКИЙ МИР", bg: "#111116", plat: "#5c3a21", coin: "gold", door: "#00ffcc" },
+    { name: "ИЗУМРУДНЫЙ ЛЕС", bg: "#0d1410", plat: "#22442b", coin: "#39ff14", door: "#ccff00" },
+    { name: "НЕОНОВЫЙ КИБЕР", bg: "#08040d", plat: "#bd0042", coin: "#00ffff", door: "#d600ff" },
+    { name: "ЛЕДЯНАЯ БЕЗДНА", bg: "#040912", plat: "#2b435c", coin: "#ffffff", door: "#0099ff" },
+    { name: "ВУЛКАНИЧЕСКИЙ АД", bg: "#0f0505", plat: "#3b0f0f", coin: "#ff4500", door: "#ffcc00" }
 ];
 let currentBiome = biomes;
 
 function saveProgress() { 
-    localStorage.setItem('p_player_lives', player.lives); 
-    localStorage.setItem('p_player_score', score); 
-    localStorage.setItem('p_player_level', currentLevel); 
-    localStorage.setItem('p_purchased_skins', JSON.stringify(purchasedSkins));
-    localStorage.setItem('p_current_skin_id', player.skinId);
-    localStorage.setItem('p_current_skin_color', player.color);
+    localStorage.setItem('meta_player_score', score); 
+    localStorage.setItem('meta_player_level', currentLevel); 
+    localStorage.setItem('meta_purchased_skins', JSON.stringify(purchasedSkins));
+    localStorage.setItem('meta_current_skin_id', player.skinId);
+    localStorage.setItem('meta_current_skin_color', player.color);
+    localStorage.setItem('meta_upg_armor', upgradeArmor);
+    localStorage.setItem('meta_upg_magnet', upgradeMagnet);
+    localStorage.setItem('meta_upg_health', upgradeHealth);
 }
 
 function generateNewLevel() {
@@ -135,26 +147,14 @@ function generateNewLevel() {
     currentBiome = biomes[biomeIndex];
     
     let maxAllowedLives = (player.skinId === 'ninja') ? 2 : 3;
-    if (player.lives <= 0 || player.lives > maxAllowedLives) player.lives = maxAllowedLives;
+    maxAllowedLives += upgradeHealth;
+    player.lives = maxAllowedLives;
     
-    player.x = 385; 
-    player.y = 350; 
-    player.vx = 0; 
-    player.vy = 0; 
-    player.jumpCount = 0;
-    player.invulnerable = 60; 
-    player.dashTimer = 0; 
-    player.dashCooldown = 0;
-    player.hookActive = false; 
-    player.parryActive = 0; 
-    player.parryCooldown = 0;
-    comboCount = 0; 
-    comboTimer = 0;
-    
-    isGameOver = false; 
-    overlay.style.display = 'none';
-    standingOnIce = false; 
-    standingOnMud = false;
+    player.x = 385; player.y = 350; player.vx = 0; player.vy = 0; player.jumpCount = 0;
+    player.invulnerable = 60; player.dashTimer = 0; player.dashCooldown = 0;
+    player.hookActive = false; player.parryActive = 0; player.parryCooldown = 0;
+    comboCount = 0; comboTimer = 0; isGameOver = false; overlay.style.display = 'none';
+    standingOnIce = false; standingOnMud = false; boss = null; particles = []; dashEchoes = [];
 
     let eventRand = Math.random();
     if (eventRand < 0.15) {
@@ -170,8 +170,16 @@ function generateNewLevel() {
         { x: 0, y: 0, width: 20, height: 500, color: '#333', type: 'wall' },
         { x: 780, y: 0, width: 20, height: 500, color: '#333', type: 'wall' }
     ]; 
-    coins = []; enemies = []; chests = []; bullets = [];
+    coins = []; enemies = []; chests = []; bullets = []; spikes = [];
     
+    if (currentLevel % 5 === 0) {
+        currentEvent = { name: "БИТВА С БОССОМ", desc: "Уничтожьте Кибер-Глаз!" };
+        boss = { x: 350, y: 120, width: 100, height: 80, hp: 100, maxHp: 100, attackTimer: 90, phase: 1, vx: 2 };
+        door = { x: 380, y: 386, width: 44, height: 64, open: false };
+        saveProgress();
+        return;
+    }
+
     let currentY = 380;
     let levelStyle = Math.floor(Math.random() * 4);
     
@@ -187,7 +195,6 @@ function generateNewLevel() {
 
             platforms.push({ x: currentX, y: currentY, width: width, height: 20, color: platColor, type: type, timer: 60 });
             spawnObjectsOnPlatform(currentX, currentY, width);
-
             currentX += (Math.random() > 0.5 ? 160 : -160);
             if (currentX < 40) currentX = 140;
             if (currentX > 640) currentX = 500;
@@ -253,6 +260,10 @@ function spawnObjectsOnPlatform(x, y, w) {
         coins.push({ x: x + (w / (coinsCount + 1)) * (i + 1), y: y - 25, radius: 7, collected: false });
     }
 
+    if (Math.random() < 0.25) {
+        spikes.push({ x: x + w/2 - 15, y: y - 10, width: 30, height: 10 });
+    }
+
     let enemyRand = Math.random();
     if (enemyRand < 0.12) {
         enemies.push({ x: x + 5, y: y - 26, width: 24, height: 26, vx: 1.1, minX: x, maxX: x + w - 24, type: 'patrol' });
@@ -262,6 +273,37 @@ function spawnObjectsOnPlatform(x, y, w) {
         enemies.push({ x: x + w/2 - 12, y: y - 30, width: 24, height: 30, shootCooldown: Math.random() * 90 + 40, type: 'turret' });
     }
 }function updateShop() {
+    metaUpgradesGrid.innerHTML = '';
+    const upgrades = [
+        { id: 'armor', name: '🛡️ ПРОЧНАЯ БРОНЯ', desc: 'Шанс заблокировать урон (+10%/ур)', current: upgradeArmor, max: 3, basePrice: 40 },
+        { id: 'magnet', name: '🧲 МАГНИТ ДЛЯ МОНЕТ', desc: 'Притягивает золото на расстоянии', current: upgradeMagnet, max: 1, basePrice: 60 },
+        { id: 'health', name: '❤️ КРЕПКОЕ ЗДОРОВЬЕ', desc: 'Увеличивает макс. жизни на +1', current: upgradeHealth, max: 2, basePrice: 100 }
+    ];
+
+    upgrades.forEach(upg => {
+        let card = document.createElement('div');
+        card.className = 'upgrade-card';
+        let isMax = upg.current >= upg.max;
+        let price = upg.basePrice * (upg.current + 1);
+        card.innerHTML = `
+            <div class="upgrade-name">${upg.name}</div>
+            <div class="upgrade-level">Ур: ${upg.current} / ${upg.max}</div>
+            <div class="upgrade-desc" style="font-size:8px; color:#aaa; margin-bottom:4px;">${upg.desc}</div>
+            <div class="upgrade-price">${isMax ? 'МАКС' : price + ' 🪙'}</div>
+        `;
+        card.onclick = () => {
+            if (!isMax && score >= price) {
+                score -= price;
+                if (upg.id === 'armor') upgradeArmor++;
+                if (upg.id === 'magnet') upgradeMagnet++;
+                if (upg.id === 'health') upgradeHealth++;
+                saveProgress();
+                updateShop();
+            }
+        };
+        metaUpgradesGrid.appendChild(card);
+    });
+
     skinsGrid.innerHTML = '';
     skinsData.forEach(skin => {
         let isPurchased = purchasedSkins.includes(skin.id);
@@ -278,14 +320,12 @@ function spawnObjectsOnPlatform(x, y, w) {
             if (isPurchased) {
                 player.skinId = skin.id; 
                 player.color = skin.color;
-                if (player.skinId === 'ninja' && player.lives > 2) player.lives = 2;
                 saveProgress();
             } else if (score >= skin.price) {
                 score -= skin.price; 
                 purchasedSkins.push(skin.id);
                 player.skinId = skin.id; 
                 player.color = skin.color;
-                if (player.skinId === 'ninja' && player.lives > 2) player.lives = 2;
                 saveProgress();
             }
             updateShop();
@@ -307,13 +347,18 @@ function startReviveTimer() {
         if (timeLeft <= 0) {
             clearInterval(reviveTimer);
             currentLevel = 1; score = 0; 
-            player.lives = (player.skinId === 'ninja') ? 2 : 3;
             generateNewLevel();
         }
     }, 1000);
 }
 
 function handleDeath() {
+    if (upgradeArmor > 0 && Math.random() < (upgradeArmor * 0.10)) {
+        player.invulnerable = 45;
+        for (let i = 0; i < 8; i++) spawnParticle(player.x + 13, player.y + 22, 'cyan');
+        return;
+    }
+
     player.lives--;
     comboCount = 0; comboTimer = 0;
     if (isTimeSlowActive) {
@@ -334,9 +379,10 @@ function handleDeath() {
 }
 
 document.getElementById('testReviveBtn').onclick = () => {
-    let maxLives = (player.skinId === 'ninja') ? 2 : 3;
+    let maxAllowedLives = (player.skinId === 'ninja') ? 2 : 3;
+    maxAllowedLives += upgradeHealth;
     if (score >= 100) {
-        score -= 100; player.lives = maxLives; isGameOver = false; overlay.style.display = 'none'; clearInterval(reviveTimer); generateNewLevel();
+        score -= 100; player.lives = maxAllowedLives; isGameOver = false; overlay.style.display = 'none'; clearInterval(reviveTimer); generateNewLevel();
     } else { alert("Недостаточно монет!"); }
 };window.addEventListener('keydown', e => { 
     keys[e.code] = true; 
@@ -373,6 +419,17 @@ if (bSlow) { bSlow.ontouchstart = (e) => { e.preventDefault(); toggleTimeSlow();
 if (bHook) { bHook.ontouchstart = (e) => { e.preventDefault(); launchHook(); }; }
 if (bParry) { bParry.ontouchstart = (e) => { e.preventDefault(); activateParry(); }; }
 
+function spawnParticle(x, y, color) {
+    particles.push({
+        x: x, y: y,
+        vx: (Math.random() - 0.5) * 4,
+        vy: (Math.random() - 0.5) * 4,
+        alpha: 1,
+        color: color,
+        size: Math.random() * 3 + 2
+    });
+}
+
 function jump() {
     let maxAllowedJumps = (player.skinId === 'ninja') ? 3 : 2;
     let calculatedJump = (player.skinId === 'cyborg') ? player.jumpStrength * 0.95 : player.jumpStrength;
@@ -382,6 +439,7 @@ function jump() {
         player.jumpCount++; 
         player.onGround = false;
         player.hookActive = false;
+        for (let i = 0; i < 6; i++) spawnParticle(player.x + 13, player.y + 44, '#888');
     }
 }
 
@@ -458,12 +516,18 @@ function checkCollision(r1, r2) {
 
 function updateCoinsCheck() {
     let remaining = coins.filter(c => !c.collected).length;
-    if (remaining === 0 && coins.length > 0) {
+    if (remaining === 0 && coins.length > 0 && !boss) {
         door.open = true;
     } else {
         door.open = false;
     }
 }function gameLoop() {
+    if (freezeFrame > 0) {
+        freezeFrame--;
+        requestAnimationFrame(gameLoop);
+        return;
+    }
+
     ctx.fillStyle = currentBiome.bg; ctx.clearRect(0,0,800,500); ctx.fillRect(0,0,800,500);
 
     if (!isGameOver) {
@@ -507,6 +571,9 @@ function updateCoinsCheck() {
             player.vx = player.dashDir * 13;
             player.vy = 0;
             player.dashTimer--;
+            if (player.dashTimer % 2 === 0) {
+                dashEchoes.push({ x: player.x, y: player.y, color: player.color, alpha: 0.6 });
+            }
         } 
         else {
             let accel = standingOnIce ? 0.12 : (standingOnMud ? 0.04 : 0.55);
@@ -517,8 +584,14 @@ function updateCoinsCheck() {
                 accel = 0.05; friction = 0.997;
             }
 
-            if (keys['ArrowLeft'] || keys['KeyA']) player.vx -= accel;
-            else if (keys['ArrowRight'] || keys['KeyD']) player.vx += accel;
+            if (keys['ArrowLeft'] || keys['KeyA']) {
+                player.vx -= accel;
+                if (player.onGround && Math.random() < 0.2) spawnParticle(player.x + player.width, player.y + player.height, '#555');
+            }
+            else if (keys['ArrowRight'] || keys['KeyD']) {
+                player.vx += accel;
+                if (player.onGround && Math.random() < 0.2) spawnParticle(player.x, player.y + player.height, '#555');
+            }
             else player.vx *= friction;
 
             if (player.vx > maxSpd) player.vx = maxSpd; 
@@ -535,7 +608,24 @@ function updateCoinsCheck() {
         if (player.invulnerable > 0) player.invulnerable--;
         if (player.y > 500) handleDeath();
 
-        standingOnIce = false; standingOnMud = false; player.onGround = false;        platforms.forEach(p => {
+        standingOnIce = false; standingOnMud = false; player.onGround = false;
+
+        if (boss) {
+            boss.x += boss.vx;
+            if (boss.x < 40 || boss.x > 760 - boss.width) boss.vx *= -1;
+            boss.attackTimer--;
+            if (boss.attackTimer <= 0) {
+                let count = boss.hp < 50 ? 5 : 3;
+                for (let i = 0; i < count; i++) {
+                    let angle = (Math.PI / (count - 1)) * i;
+                    bullets.push({ x: boss.x + boss.width / 2, y: boss.y + boss.height, vx: Math.cos(angle) * 3, vy: Math.sin(angle) * 3 });
+                }
+                boss.attackTimer = boss.hp < 50 ? 60 : 90;
+            }
+            if (Math.random() < 0.015 && boss.hp < 50) {
+                enemies.push({ x: boss.x + boss.width / 2, y: boss.y + boss.height, width: 20, height: 20, vx: Math.random() > 0.5 ? 1 : -1, minX: 40, maxX: 740, baseScaleY: 300, timeTrack: 0, type: 'drone' });
+            }
+        }        platforms.forEach(p => {
             ctx.fillStyle = p.color; 
             ctx.fillRect(p.x, p.y, p.width, p.height);
 
@@ -561,13 +651,35 @@ function updateCoinsCheck() {
             }
         });
 
+        spikes.forEach(s => {
+            ctx.fillStyle = '#ff3333';
+            ctx.beginPath();
+            ctx.moveTo(s.x, s.y + s.height);
+            ctx.lineTo(s.x + s.width / 2, s.y);
+            ctx.lineTo(s.x + s.width, s.y + s.height);
+            ctx.closePath();
+            ctx.fill();
+            if (checkCollision(player, s) && player.invulnerable <= 0) { handleDeath(); }
+        });
+
         coins.forEach(c => {
             if (!c.collected) {
+                if (upgradeMagnet > 0) {
+                    let dx = (player.x + player.width / 2) - c.x;
+                    let dy = (player.y + player.height / 2) - c.y;
+                    let dist = Math.hypot(dx, dy);
+                    if (dist < 120) {
+                        c.x += (dx / dist) * 3.5;
+                        c.y += (dy / dist) * 3.5;
+                    }
+                }
+
                 ctx.fillStyle = currentBiome.coin; ctx.beginPath(); ctx.arc(c.x, c.y, c.radius, 0, Math.PI*2); ctx.fill();
                 if (Math.abs(player.x + player.width/2 - c.x) < player.width/2 + c.radius && Math.abs(player.y + player.height/2 - c.y) < player.height/2 + c.radius) {
                     c.collected = true; 
                     comboCount++; comboTimer = 180; 
                     score += 5 * (comboCount > 5 ? 2 : 1);
+                    for (let i = 0; i < 6; i++) spawnParticle(c.x, c.y, '#ffcc00');
                     saveProgress();
                 }
             }
@@ -581,12 +693,13 @@ function updateCoinsCheck() {
                 let reward = (currentEvent.name === "ЗОЛОТАЯ ЛИХОРАДКА") ? 60 : 25;
                 if (player.skinId === 'midas') reward = Math.floor(reward * 1.4); 
                 score += reward; 
+                for (let i = 0; i < 15; i++) spawnParticle(ch.x + 13, ch.y + 12, '#ffea00');
                 saveProgress(); 
             }
         });
 
         bullets.forEach(b => {
-            b.x += b.vx;
+            b.x += b.vx; b.y += (b.vy || 0);
             ctx.fillStyle = '#ff3300'; ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, Math.PI*2); ctx.fill();
             
             let bulletRect = { x: b.x - 4, y: b.y - 4, width: 8, height: 8 };
@@ -594,10 +707,11 @@ function updateCoinsCheck() {
                 bullets = bullets.filter(item => item !== b);
                 if (player.parryActive > 0) { 
                     comboCount++; score += 10;
+                    for (let i = 0; i < 8; i++) spawnParticle(b.x, b.y, 'cyan');
                 } else if (player.invulnerable <= 0) { handleDeath(); }
             }
         });
-        bullets = bullets.filter(b => b.x > 0 && b.x < 800);
+        bullets = bullets.filter(b => b.x > 0 && b.x < 800 && b.y > 0 && b.y < 500);
 
         enemies.forEach(e => {
             if (e.type === 'patrol') {
@@ -605,14 +719,13 @@ function updateCoinsCheck() {
                 ctx.fillStyle = '#ff1111'; ctx.fillRect(e.x, e.y, e.width, e.height);
             } else if (e.type === 'drone') {
                 e.x += e.vx; if (e.x < e.minX || e.x > e.maxX) e.vx *= -1;
-                e.timeTrack += 0.05;
-                e.y = e.baseScaleY + Math.sin(e.timeTrack) * 25;
+                e.timeTrack += 0.05; e.y = e.baseScaleY + Math.sin(e.timeTrack) * 25;
                 ctx.fillStyle = '#ff5500'; ctx.fillRect(e.x, e.y, e.width, e.height);
             } else if (e.type === 'turret') {
                 e.shootCooldown--;
                 if (e.shootCooldown <= 0) {
                     let bDir = (player.x < e.x) ? -3.5 : 3.5;
-                    bullets.push({ x: e.x + e.width/2, y: e.y + 10, vx: bDir });
+                    bullets.push({ x: e.x + e.width/2, y: e.y + 10, vx: bDir, vy: 0 });
                     e.shootCooldown = 110;
                 }
                 ctx.fillStyle = '#990000'; ctx.fillRect(e.x, e.y, e.width, e.height);
@@ -621,16 +734,47 @@ function updateCoinsCheck() {
             if (checkCollision(player, e)) {
                 if (player.parryActive > 0) { 
                     enemies = enemies.filter(item => item !== e);
-                    comboCount++; score += 15; saveProgress();
+                    comboCount++; score += 15; 
+                    freezeFrame = 5;
+                    for (let i = 0; i < 12; i++) spawnParticle(e.x + e.width/2, e.y + e.height/2, '#ff1111');
+                    saveProgress();
                 } else if (player.invulnerable <= 0) { 
                     handleDeath(); 
                 }
             }
         });
 
+        if (boss && checkCollision(player, boss)) {
+            if (player.parryActive > 0) {
+                boss.hp -= 10;
+                player.vy = -8;
+                player.parryActive = 0;
+                freezeFrame = 8;
+                for (let i = 0; i < 15; i++) spawnParticle(player.x + 13, player.y, '#00ffff');
+                if (boss.hp <= 0) {
+                    boss = null; door.open = true; score += 150; saveProgress();
+                }
+            } else if (player.invulnerable <= 0) {
+                handleDeath();
+            }
+        }
+
         if (currentEvent.name === "ЗВЕЗДНЫЙ ДОЖДЬ" && Math.random() < 0.02) {
             bullets.push({ x: Math.random() * 740 + 20, y: 10, vx: (Math.random() - 0.5) * 2, vy: 4 });
         }
+
+        dashEchoes.forEach(echo => {
+            ctx.save(); ctx.globalAlpha = echo.alpha; ctx.fillStyle = echo.color;
+            ctx.fillRect(echo.x, echo.y, 26, 44); ctx.restore(); echo.alpha -= 0.05;
+        });
+        dashEchoes = dashEchoes.filter(echo => echo.alpha > 0);
+
+        particles.forEach(p => {
+            p.x += p.vx; p.y += p.vy; p.alpha -= 0.02;
+            ctx.save(); ctx.globalAlpha = p.alpha; ctx.fillStyle = p.color;
+            ctx.fillRect(p.x, p.y, p.size, p.size); ctx.restore();
+        });
+        particles = particles.filter(p => p.alpha > 0);
 
         if (player.hookActive) {
             ctx.strokeStyle = 'yellow'; ctx.lineWidth = 2; ctx.beginPath();
@@ -642,17 +786,17 @@ function updateCoinsCheck() {
             ctx.arc(player.x + player.width/2, player.y + player.height/2, 32, 0, Math.PI*2); ctx.stroke();
         }
 
-        ctx.fillStyle = door.open ? currentBiome.door : '#444444'; 
-        ctx.fillRect(door.x, door.y, door.width, door.height);
-        
-        if (!door.open) {
-            ctx.fillStyle = 'white'; ctx.font = "11px Arial";
-            ctx.fillText("ЗАПЕРТО", door.x - 5, door.y - 8);
+        if (boss) {
+            ctx.fillStyle = '#ff0055'; ctx.fillRect(boss.x, boss.y, boss.width, boss.height);
+            ctx.fillStyle = '#222'; ctx.fillRect(200, 20, 400, 14);
+            ctx.fillStyle = '#ff0055'; ctx.fillRect(200, 20, 400 * (boss.hp / boss.maxHp), 14);
+            ctx.fillStyle = '#fff'; ctx.font = "bold 10px Arial"; ctx.fillText("КИБЕР-ГЛАЗ", 370, 31);
         }
+
+        ctx.fillStyle = door.open ? currentBiome.door : '#444444'; ctx.fillRect(door.x, door.y, door.width, door.height);
         if (door.open && checkCollision(player, door)) { currentLevel++; generateNewLevel(); }
 
-        ctx.fillStyle = player.color; 
-        ctx.fillRect(player.x, player.y, player.width, player.height);
+        ctx.fillStyle = player.color; ctx.fillRect(player.x, player.y, player.width, player.height);
     }
 
     ctx.fillStyle = "white"; ctx.font = "bold 14px Arial";
@@ -662,7 +806,7 @@ function updateCoinsCheck() {
     
     let remCoins = coins.filter(c => !c.collected).length;
     ctx.fillStyle = remCoins > 0 ? '#ffcc00' : '#00ffcc';
-    ctx.fillText(remCoins > 0 ? `ОСТАЛОСЬ МОНЕТ: ${remCoins} 🪙` : "ВЫХОД ОТКРЫТ! 🚪", 20, 94);
+    if (!boss) ctx.fillText(remCoins > 0 ? `ОСТАЛОСЬ МОНЕТ: ${remCoins} 🪙` : "ВЫХОД ОТКРЫТ! 🚪", 20, 94);
 
     if (comboCount > 0) {
         ctx.fillStyle = '#ff0055'; ctx.font = "italic bold 14px Arial";
@@ -680,7 +824,7 @@ document.getElementById('downloadBtn').onclick = () => {
     const blob = new Blob([htmlContent], { type: 'text/html' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'hardcore_platformer_v16.html';
+    a.download = 'hardcore_platformer_v17.html';
     a.click();
 };
 
