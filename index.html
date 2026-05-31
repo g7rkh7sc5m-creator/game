@@ -5,21 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <title>Хардкорный Рогалик v17</title>
 
+<!-- Включаем режим автономного приложения для Safari -->
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="Рогалик v17" />
 
+<!-- Зелёная иконка для экрана Домой -->
 <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://w3.org viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23111116%22/><rect x=%2225%22 y=%2225%22 width=%2250%22 height=%2250%22 fill=%22lime%22 rx=%2210%22/></svg>">
-<link rel="shortcut icon" href="data:image/svg+xml,<svg xmlns=%22http://w3.org viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23111116%22/><rect x=%2225%22 y=%2225%22 width=%2250%22 height=%2250%22 fill=%22lime%22 rx=%2210%22/></svg>">
-<link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIkhhcmRjb3JlIFJvZ3VlbGlrIiwKICAic2hvcnRfbmFtZSI6ICJSb2dhbGlrIiwKICAic3RhcnRvdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMwMDAwMDAiLAogICJ0aGVtZV9jb2xvciI6ICIjMDAwMDAwIgp9">
+<link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIkhhcmRjb3JlIFJvZ3VlbGlrIiwKICAic2hvcnRfbmFtZSI6ICJSb2dhbGlrIiwKICAic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMwMDAwMDAiLAogICJ0aGVtZV9jb2xvciI6ICIjMDAwMDAwIgp9">
 
 <style>
     * { box-sizing: border-box; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: none; }
     body { background: #000; margin: 0; padding: 0; font-family: Arial, sans-serif; overflow: hidden; width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-    
     .game-container { position: relative; width: 100%; max-width: 800px; height: 100%; max-height: 500px; display: flex; justify-content: center; align-items: center; }
     canvas { background: #111; display: block; max-width: 100%; max-height: 100%; box-shadow: 0 0 30px rgba(0,0,0,0.8); object-fit: contain; }
-    
     .game-over-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95); display: none; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 20; padding: 10px; overflow-y: auto; }
     .game-over-overlay h1 { color: #ff3333; margin: 0 0 5px 0; font-size: 24px; text-shadow: 0 0 10px rgba(255,0,0,0.5); }
     .timer-text { font-size: 15px; font-weight: bold; margin: 3px 0; color: #ffcc00; }
@@ -38,16 +37,12 @@
     .skin-name { font-size: 8px; font-weight: bold; text-align: center; }
     .skin-desc { font-size: 7px; color: #9aa; text-align: center; min-height: 14px; line-height: 1; margin-bottom: 2px; }
     .skin-price { font-size: 8px; color: #ffcc00; font-weight: bold; }
-    
     .mobile-ui { position: absolute; bottom: 25px; left: 0; right: 0; display: flex; justify-content: space-between; padding: 0 20px; width: 100%; pointer-events: none; z-index: 10; }
     .move-group, .action-group { display: flex; gap: 10px; pointer-events: auto; align-items: flex-end; }
-    
     .touch-btn { background: rgba(255, 255, 255, 0.15); color: white; border: 1.5px solid rgba(255, 255, 255, 0.4); width: 55px; height: 55px; border-radius: 50%; font-size: 20px; font-weight: bold; display: flex; justify-content: center; align-items: center; cursor: pointer; pointer-events: auto; -webkit-tap-highlight-color: transparent; }
     .touch-btn:active { background: rgba(255, 255, 255, 0.4); }
-    
     .jump-btn { background: rgba(0, 255, 0, 0.2); border-color: lime; color: lime; font-size: 11px; }
     .jump-btn:active { background: rgba(0, 255, 0, 0.5); }
-    
     .download-container { position: absolute; top: 10px; right: 10px; z-index: 15; }
     .download-btn { background-color: lime; color: #111; border: none; padding: 6px 12px; font-size: 12px; font-weight: bold; border-radius: 4px; cursor: pointer; }
 </style>
@@ -779,10 +774,12 @@ document.getElementById('downloadBtn').onclick = () => {
 generateNewLevel();
 requestAnimationFrame(gameLoop);
 
+// ХАК ДЛЯ СТОПРОЦЕНТНОГО ОФЛАЙНА В ЗАКЛАДКЕ
 if ('serviceWorker' in navigator) {
-    const swCode = "self.addEventListener('fetch', function(e){ e.respondWith(fetch(e.request).catch(function(){return new Response('offline');})); });";
+    // Вшиваем полностью автономный скрипт кэширования прямо в память Safari
+    const swCode = "self.addEventListener('install', function(e) { self.skipWaiting(); }); self.addEventListener('activate', function(e) { e.waitUntil(clients.claim()); }); self.addEventListener('fetch', function(e) { e.respondWith(fetch(e.request).catch(function() { return new Response('<html><head><meta charset=\"UTF-8\"></head><body style=\"background:%23000;color:%23fff;display:flex;justify-content:center;align-items:center;height:100dmh\">Сбой сети</body></html>', { headers: { 'Content-Type': 'text/html' } }); })); });";
     const blob = new Blob([swCode], {type: 'application/javascript'});
-    navigator.serviceWorker.register(URL.createObjectURL(blob));
+    navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(function(err) {});
 }
 </script>
 </body>
