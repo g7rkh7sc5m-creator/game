@@ -61,7 +61,6 @@
         <div class="touch-btn" id="btnHook" style="background:rgba(255,255,0,0.15); border-color:yellow; color:yellow; font-size:12px;">КРЮК</div>
         <div class="touch-btn" id="btnParry" style="background:rgba(255,0,0,0.15); border-color:red; color:red; font-size:12px;">ЩИТ</div>
         <div class="touch-btn" id="btnDash" style="background:rgba(0,150,255,0.15); border-color:#00aeff; color:#00aeff; font-size:12px;">РЫВОК</div>
-        <div class="touch-btn" id="btnSlow" style="background:rgba(255,0,255,0.15); border-color:#ff00ff; color:#ff00ff; font-size:12px;">ВРЕМЯ</div>
         <div class="touch-btn jump-btn" id="btnJump">ВВЕРХ</div>
     </div>
 </div>
@@ -80,7 +79,6 @@ resizeCanvas();
 let savedScore = localStorage.getItem('meta_player_score'); let score = savedScore !== null ? parseInt(savedScore) : 0;
 let savedLevel = localStorage.getItem('meta_player_level'); let currentLevel = savedLevel !== null ? parseInt(savedLevel) : 1;
 
-// Мета-прокачка (Таланты)
 let upgradeArmor = parseInt(localStorage.getItem('meta_upg_armor')) || 0;
 let upgradeMagnet = parseInt(localStorage.getItem('meta_upg_magnet')) || 0;
 let upgradeHealth = parseInt(localStorage.getItem('meta_upg_health')) || 0;
@@ -118,7 +116,6 @@ const gravity = 0.6; const keys = {};
 let platforms = []; let coins = []; let enemies = []; let chests = []; let bullets = []; let spikes = [];
 let door = { x: 0, y: 0, width: 44, height: 64, open: false }; let isGameOver = false; let standingOnIce = false; let standingOnMud = false;
 
-// Системы Босса и Частиц
 let boss = null;
 let particles = [];
 let dashEchoes = [];
@@ -275,16 +272,16 @@ function spawnObjectsOnPlatform(x, y, w) {
 }function updateShop() {
     metaUpgradesGrid.innerHTML = '';
     const upgrades = [
-        { id: 'armor', name: '🛡️ ПРОЧНАЯ БРОНЯ', desc: 'Шанс заблокировать урон (+10%/ур)', current: upgradeArmor, max: 3, basePrice: 40 },
-        { id: 'magnet', name: '🧲 МАГНИТ ДЛЯ МОНЕТ', desc: 'Притягивает золото на расстоянии', current: upgradeMagnet, max: 1, basePrice: 60 },
-        { id: 'health', name: '❤️ КРЕПКОЕ ЗДОРОВЬЕ', desc: 'Увеличивает макс. жизни на +1', current: upgradeHealth, max: 2, basePrice: 100 }
+        { id: 'armor', name: '🛡️ ПРОЧНАЯ БРОНЯ', desc: 'Шанс заблокировать урон (+10%/ур)', current: upgradeArmor, max: 3, basePrice: 400 },
+        { id: 'magnet', name: '🧲 МАГНИТ ДЛЯ МОНЕТ', desc: 'Притягивает золото на расстоянии', current: upgradeMagnet, max: 1, basePrice: 600 },
+        { id: 'health', name: '❤️ КРЕПКОЕ ЗДОРОВЬЕ', desc: 'Увеличивает макс. жизни на +1', current: upgradeHealth, max: 2, basePrice: 1000 }
     ];
 
     upgrades.forEach(upg => {
         let card = document.createElement('div');
         card.className = 'upgrade-card';
         let isMax = upg.current >= upg.max;
-        let price = upg.basePrice * (upg.current + 1);
+        let price = upg.basePrice * (upg.current + 1) * 2;
         card.innerHTML = `
             <div class="upgrade-name">${upg.name}</div>
             <div class="upgrade-level">Ур: ${upg.current} / ${upg.max}</div>
@@ -361,10 +358,6 @@ function handleDeath() {
 
     player.lives--;
     comboCount = 0; comboTimer = 0;
-    if (isTimeSlowActive) {
-        isTimeSlowActive = false;
-        timeScale = 1.0;
-    }
     if (player.lives <= 0) {
         isGameOver = true;
         overlay.style.display = 'flex';
@@ -388,7 +381,6 @@ document.getElementById('testReviveBtn').onclick = () => {
     keys[e.code] = true; 
     if (e.code === 'KeyW' || e.code === 'Space' || e.code === 'ArrowUp') jump(); 
     if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') executeDash();
-    if (e.code === 'CapsLock') toggleTimeSlow();
     if (e.code === 'KeyE') launchHook();
     if (e.code === 'KeyQ') activateParry();
 });
@@ -408,14 +400,12 @@ window.addEventListener('keyup', e => {
 });
 
 const bLeft = document.getElementById('btnLeft'); const bRight = document.getElementById('btnRight'); const bJump = document.getElementById('btnJump');
-const bDash = document.getElementById('btnDash'); const bSlow = document.getElementById('btnSlow');
-const bHook = document.getElementById('btnHook'); const bParry = document.getElementById('btnParry');
+const bDash = document.getElementById('btnDash'); const bHook = document.getElementById('btnHook'); const bParry = document.getElementById('btnParry');
 
 if (bLeft) { bLeft.ontouchstart = (e) => { e.preventDefault(); keys['ArrowLeft'] = true; }; bLeft.ontouchend = () => keys['ArrowLeft'] = false; }
 if (bRight) { bRight.ontouchstart = (e) => { e.preventDefault(); keys['ArrowRight'] = true; }; bRight.ontouchend = () => keys['ArrowRight'] = false; }
 if (bJump) { bJump.ontouchstart = (e) => { e.preventDefault(); jump(); }; }
 if (bDash) { bDash.ontouchstart = (e) => { e.preventDefault(); executeDash(); }; }
-if (bSlow) { bSlow.ontouchstart = (e) => { e.preventDefault(); toggleTimeSlow(); }; }
 if (bHook) { bHook.ontouchstart = (e) => { e.preventDefault(); launchHook(); }; }
 if (bParry) { bParry.ontouchstart = (e) => { e.preventDefault(); activateParry(); }; }
 
@@ -459,19 +449,6 @@ function executeDash(forcedDir = 0) {
     player.dashDir = dir;
     player.vy = 0;
     player.hookActive = false;
-}
-
-function toggleTimeSlow() {
-    if (isGameOver) return;
-    if (!isTimeSlowActive) {
-        if (score >= 1) {
-            isTimeSlowActive = true; timeScale = 0.4;
-            if (bSlow) bSlow.style.background = 'rgba(255, 0, 255, 0.6)';
-        }
-    } else {
-        isTimeSlowActive = false; timeScale = 1.0;
-        if (bSlow) bSlow.style.background = 'rgba(255, 0, 255, 0.15)';
-    }
 }
 
 function launchHook() {
@@ -531,15 +508,6 @@ function updateCoinsCheck() {
     ctx.fillStyle = currentBiome.bg; ctx.clearRect(0,0,800,500); ctx.fillRect(0,0,800,500);
 
     if (!isGameOver) {
-        if (isTimeSlowActive) {
-            slowModeTimer += 1;
-            if (slowModeTimer >= 60) {
-                if (score > 0) { score--; saveProgress(); } 
-                else { toggleTimeSlow(); }
-                slowModeTimer = 0;
-            }
-        }
-
         if (player.dashCooldown > 0) player.dashCooldown--;
         if (player.parryCooldown > 0) player.parryCooldown--;
         if (player.parryActive > 0) player.parryActive--;
@@ -678,7 +646,7 @@ function updateCoinsCheck() {
                 if (Math.abs(player.x + player.width/2 - c.x) < player.width/2 + c.radius && Math.abs(player.y + player.height/2 - c.y) < player.height/2 + c.radius) {
                     c.collected = true; 
                     comboCount++; comboTimer = 180; 
-                    score += 5 * (comboCount > 5 ? 2 : 1);
+                    score += 1;
                     for (let i = 0; i < 6; i++) spawnParticle(c.x, c.y, '#ffcc00');
                     saveProgress();
                 }
@@ -690,7 +658,7 @@ function updateCoinsCheck() {
             ctx.fillStyle = ch.opened ? '#664422' : '#b5702d'; ctx.fillRect(ch.x, ch.y, ch.width, ch.height);
             if (!ch.opened && checkCollision(player, ch)) { 
                 ch.opened = true; 
-                let reward = (currentEvent.name === "ЗОЛОТАЯ ЛИХОРАДКА") ? 60 : 25;
+                let reward = (currentEvent.name === "ЗОЛОТАЯ ЛИХОРАДКА") ? 15 : 5;
                 if (player.skinId === 'midas') reward = Math.floor(reward * 1.4); 
                 score += reward; 
                 for (let i = 0; i < 15; i++) spawnParticle(ch.x + 13, ch.y + 12, '#ffea00');
@@ -706,7 +674,7 @@ function updateCoinsCheck() {
             if (checkCollision(player, bulletRect)) {
                 bullets = bullets.filter(item => item !== b);
                 if (player.parryActive > 0) { 
-                    comboCount++; score += 10;
+                    comboCount++; score += 2;
                     for (let i = 0; i < 8; i++) spawnParticle(b.x, b.y, 'cyan');
                 } else if (player.invulnerable <= 0) { handleDeath(); }
             }
@@ -734,7 +702,7 @@ function updateCoinsCheck() {
             if (checkCollision(player, e)) {
                 if (player.parryActive > 0) { 
                     enemies = enemies.filter(item => item !== e);
-                    comboCount++; score += 15; 
+                    comboCount++; score += 3; 
                     freezeFrame = 5;
                     for (let i = 0; i < 12; i++) spawnParticle(e.x + e.width/2, e.y + e.height/2, '#ff1111');
                     saveProgress();
@@ -752,7 +720,7 @@ function updateCoinsCheck() {
                 freezeFrame = 8;
                 for (let i = 0; i < 15; i++) spawnParticle(player.x + 13, player.y, '#00ffff');
                 if (boss.hp <= 0) {
-                    boss = null; door.open = true; score += 150; saveProgress();
+                    boss = null; door.open = true; score += 50; saveProgress();
                 }
             } else if (player.invulnerable <= 0) {
                 handleDeath();
