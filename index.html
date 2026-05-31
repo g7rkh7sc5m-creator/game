@@ -3,16 +3,16 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>Хардкорный Рогалик Платформер v17</title>
+<title>Хардкорный Рогалик Платформер v17.1</title>
 <style>
     * { box-sizing: border-box; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: none; }
-    body { background: #0b0b0f; margin: 0; padding: 0; font-family: Arial, sans-serif; overflow: hidden; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; }
+    body { background: #07070a; margin: 0; padding: 0; font-family: Arial, sans-serif; overflow: hidden; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; }
     
-    /* Контейнер и canvas теперь занимают честные 100% экрана смартфона */
-    .game-container { position: relative; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; }
+    /* Контейнер и холст теперь жестко сидят в 100% экрана без искажений */
+    .game-container { position: relative; width: 100vw; height: 100vh; overflow: hidden; display: flex; justify-content: center; align-items: center; }
     canvas { background: #111116; display: block; width: 100vw; height: 100vh; }
     
-    .game-over-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5, 5, 10, 0.96); display: none; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 5; padding: 15px; overflow-y: auto; }
+    .game-over-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5, 5, 10, 0.96); display: none; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 20; padding: 15px; overflow-y: auto; }
     .game-over-overlay h1 { color: #ff3333; margin: 0 0 5px 0; font-size: 26px; text-shadow: 0 0 15px rgba(255,0,0,0.6); }
     .timer-text { font-size: 16px; font-weight: bold; margin: 3px 0; color: #ffcc00; }
     .test-revive-btn { background: gold; color: #111; border: none; padding: 8px 18px; font-weight: bold; border-radius: 5px; cursor: pointer; font-size: 13px; margin-bottom: 10px; }
@@ -32,18 +32,18 @@
     .skin-desc { font-size: 8px; color: #9aa; text-align: center; margin-bottom: 3px; line-height: 1; min-height: 16px; }
     .skin-price { font-size: 9px; color: #ffcc00; font-weight: bold; }
     
-    /* Сенсорные кнопки поверх полноэкранного Canvas */
-    .mobile-ui { position: absolute; bottom: 30px; left: 0; right: 0; display: flex; justify-content: space-between; padding: 0 30px; width: 100%; pointer-events: none; z-index: 2; }
-    .move-group, .action-group { display: flex; gap: 16px; pointer-events: auto; align-items: flex-end; }
+    /* ФИКС: Кнопки теперь используют безопасную зону экрана смартфона (Safe Area) */
+    .mobile-ui { position: absolute; bottom: calc(15px + env(safe-area-inset-bottom)); left: 0; right: 0; display: flex; justify-content: space-between; padding: 0 calc(20px + env(safe-area-inset-left)) 0 calc(20px + env(safe-area-inset-right)); width: 100%; pointer-events: none; z-index: 10; }
+    .move-group, .action-group { display: flex; gap: 14px; pointer-events: auto; align-items: flex-end; }
     
-    .touch-btn { background: rgba(255, 255, 255, 0.15); color: white; border: 2px solid rgba(255, 255, 255, 0.4); width: 65px; height: 65px; border-radius: 50%; font-size: 22px; font-weight: bold; display: flex; justify-content: center; align-items: center; cursor: pointer; pointer-events: auto; -webkit-tap-highlight-color: transparent; }
+    .touch-btn { background: rgba(255, 255, 255, 0.15); color: white; border: 2px solid rgba(255, 255, 255, 0.4); width: 60px; height: 60px; border-radius: 50%; font-size: 20px; font-weight: bold; display: flex; justify-content: center; align-items: center; cursor: pointer; pointer-events: auto; -webkit-tap-highlight-color: transparent; }
     .touch-btn:active { background: rgba(255, 255, 255, 0.4); }
     
-    .jump-btn { width: 75px; height: 75px; background: rgba(0, 255, 0, 0.18); border-color: lime; color: lime; font-size: 14px; }
+    .jump-btn { width: 70px; height: 70px; background: rgba(0, 255, 0, 0.18); border-color: lime; color: lime; font-size: 13px; }
     .jump-btn:active { background: rgba(0, 255, 0, 0.5); }
     
-    .download-container { position: absolute; top: 10px; right: 10px; z-index: 10; }
-    .download-btn { background-color: lime; color: #111; border: none; padding: 8px 15px; font-size: 14px; font-weight: bold; border-radius: 5px; cursor: pointer; }
+    .download-container { position: absolute; top: calc(10px + env(safe-area-inset-top)); right: calc(10px + env(safe-area-inset-right)); z-index: 15; }
+    .download-btn { background-color: lime; color: #111; border: none; padding: 8px 15px; font-size: 13px; font-weight: bold; border-radius: 5px; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -66,9 +66,9 @@
         <div class="touch-btn" id="btnRight">→</div>
     </div>
     <div class="action-group">
-        <div class="touch-btn" id="btnHook" style="background:rgba(255,255,0,0.15); border-color:yellow; color:yellow; font-size:11px;">КРЮК</div>
-        <div class="touch-btn" id="btnParry" style="background:rgba(255,0,0,0.15); border-color:red; color:red; font-size:11px;">ЩИТ</div>
-        <div class="touch-btn" id="btnDash" style="background:rgba(0,150,255,0.15); border-color:#00aeff; color:#00aeff; font-size:11px;">РЫВОК</div>
+        <div class="touch-btn" id="btnHook" style="background:rgba(255,255,0,0.15); border-color:yellow; color:yellow; font-size:10px;">КРЮК</div>
+        <div class="touch-btn" id="btnParry" style="background:rgba(255,0,0,0.15); border-color:red; color:red; font-size:10px;">ЩИТ</div>
+        <div class="touch-btn" id="btnDash" style="background:rgba(0,150,255,0.15); border-color:#00aeff; color:#00aeff; font-size:10px;">РЫВОК</div>
         <div class="touch-btn jump-btn" id="btnJump">ВВЕРХ</div>
     </div>
 </div>
@@ -76,9 +76,24 @@
 const overlay = document.getElementById('gameOverOverlay'); const timerText = document.getElementById('timerText'); 
 const skinsGrid = document.getElementById('skinsGrid'); const metaUpgradesGrid = document.getElementById('metaUpgradesGrid');
 
+// Умное масштабирование: сохраняем высоту 500px, а ширину адаптируем под экран смартфона
+let baseHeight = 500;
+let scaleFactor = 1;
+
 function resizeCanvas() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    let windowWidth = window.innerWidth;
+    let windowHeight = window.innerHeight;
+    
+    // Рассчитываем масштаб по высоте, чтобы игра не казалась гигантской или крошечной
+    scaleFactor = windowHeight / baseHeight;
+    
+    // Логический размер холста: высота всегда 500, ширина подстраивается под экран
+    canvas.height = baseHeight;
+    canvas.width = windowWidth / scaleFactor;
+    
+    // Физический размер элемента на весь экран
+    canvas.style.width = windowWidth + 'px';
+    canvas.style.height = windowHeight + 'px';
 }
 window.addEventListener('resize', resizeCanvas); window.addEventListener('orientationchange', resizeCanvas);
 resizeCanvas();
