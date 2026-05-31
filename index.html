@@ -4,6 +4,15 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <title>Хардкорный Рогалик v17</title>
+
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Рогалик v17" />
+
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://w3.org viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23111116%22/><rect x=%2225%22 y=%2225%22 width=%2250%22 height=%2250%22 fill=%22lime%22 rx=%2210%22/></svg>">
+<link rel="shortcut icon" href="data:image/svg+xml,<svg xmlns=%22http://w3.org viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23111116%22/><rect x=%2225%22 y=%2225%22 width=%2250%22 height=%2250%22 fill=%22lime%22 rx=%2210%22/></svg>">
+<link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIkhhcmRjb3JlIFJvZ3VlbGlrIiwKICAic2hvcnRfbmFtZSI6ICJSb2dhbGlrIiwKICAic3RhcnRvdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMwMDAwMDAiLAogICJ0aGVtZV9jb2xvciI6ICIjMDAwMDAwIgp9">
+
 <style>
     * { box-sizing: border-box; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: none; }
     body { background: #000; margin: 0; padding: 0; font-family: Arial, sans-serif; overflow: hidden; width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; }
@@ -30,14 +39,12 @@
     .skin-desc { font-size: 7px; color: #9aa; text-align: center; min-height: 14px; line-height: 1; margin-bottom: 2px; }
     .skin-price { font-size: 8px; color: #ffcc00; font-weight: bold; }
     
-    /* ФИКС: Приподняли весь интерфейс кнопок повыше (bottom: 25px) */
     .mobile-ui { position: absolute; bottom: 25px; left: 0; right: 0; display: flex; justify-content: space-between; padding: 0 20px; width: 100%; pointer-events: none; z-index: 10; }
     .move-group, .action-group { display: flex; gap: 10px; pointer-events: auto; align-items: flex-end; }
     
     .touch-btn { background: rgba(255, 255, 255, 0.15); color: white; border: 1.5px solid rgba(255, 255, 255, 0.4); width: 55px; height: 55px; border-radius: 50%; font-size: 20px; font-weight: bold; display: flex; justify-content: center; align-items: center; cursor: pointer; pointer-events: auto; -webkit-tap-highlight-color: transparent; }
     .touch-btn:active { background: rgba(255, 255, 255, 0.4); }
     
-    /* ФИКС: Сделали кнопку прыжка аккуратной и стандартного размера */
     .jump-btn { background: rgba(0, 255, 0, 0.2); border-color: lime; color: lime; font-size: 11px; }
     .jump-btn:active { background: rgba(0, 255, 0, 0.5); }
     
@@ -133,7 +140,7 @@ let freezeFrame = 0;const biomes = [
     { name: "ЛЕДЯНАЯ БЕЗДНА", bg: "#040912", plat: "#2b435c", coin: "#ffffff", door: "#0099ff" },
     { name: "ВУЛКАНИЧЕСКИЙ АД", bg: "#0f0505", plat: "#3b0f0f", coin: "#ff4500", door: "#ffcc00" }
 ];
-let currentBiome = biomes[0];
+let currentBiome = biomes;
 
 function saveProgress() { 
     localStorage.setItem('meta_player_score', score); 
@@ -361,7 +368,6 @@ function startReviveTimer() {
 function handleDeath() {
     if (upgradeArmor > 0 && Math.random() < (upgradeArmor * 0.10)) {
         player.invulnerable = 45;
-        for (let i = 0; i < 8; i++) spawnParticle(player.x + 13, player.y + 22, 'cyan');
         return;
     }
 
@@ -419,14 +425,7 @@ if (bHook) { bHook.ontouchstart = (e) => { e.preventDefault(); launchHook(); }; 
 if (bParry) { bParry.ontouchstart = (e) => { e.preventDefault(); activateParry(); }; }
 
 function spawnParticle(x, y, color) {
-    particles.push({
-        x: x, y: y,
-        vx: (Math.random() - 0.5) * 4,
-        vy: (Math.random() - 0.5) * 4,
-        alpha: 1,
-        color: color,
-        size: Math.random() * 3 + 2
-    });
+    // Частицы полностью отключены для максимального охлаждения системы
 }
 
 function jump() {
@@ -438,7 +437,6 @@ function jump() {
         player.jumpCount++; 
         player.onGround = false;
         player.hookActive = false;
-        for (let i = 0; i < 6; i++) spawnParticle(player.x + 13, player.y + 44, '#888');
     }
 }
 
@@ -548,9 +546,6 @@ function updateCoinsCheck() {
             player.vx = player.dashDir * 13;
             player.vy = 0;
             player.dashTimer--;
-            if (player.dashTimer % 2 === 0) {
-                dashEchoes.push({ x: player.x, y: player.y, color: player.color, alpha: 0.6 });
-            }
         } 
         else {
             let accel = standingOnIce ? 0.12 : (standingOnMud ? 0.04 : 0.55);
@@ -561,14 +556,8 @@ function updateCoinsCheck() {
                 accel = 0.05; friction = 0.997;
             }
 
-            if (keys['ArrowLeft'] || keys['KeyA']) {
-                player.vx -= accel;
-                if (player.onGround && Math.random() < 0.2) spawnParticle(player.x + player.width, player.y + player.height, '#555');
-            }
-            else if (keys['ArrowRight'] || keys['KeyD']) {
-                player.vx += accel;
-                if (player.onGround && Math.random() < 0.2) spawnParticle(player.x, player.y + player.height, '#555');
-            }
+            if (keys['ArrowLeft'] || keys['KeyA']) player.vx -= accel;
+            else if (keys['ArrowRight'] || keys['KeyD']) player.vx += accel;
             else player.vx *= friction;
 
             if (player.vx > maxSpd) player.vx = maxSpd; 
@@ -656,7 +645,6 @@ function updateCoinsCheck() {
                     c.collected = true; 
                     comboCount++; comboTimer = 180; 
                     score += 1;
-                    for (let i = 0; i < 6; i++) spawnParticle(c.x, c.y, '#ffcc00');
                     saveProgress();
                 }
             }
@@ -670,7 +658,6 @@ function updateCoinsCheck() {
                 let reward = (currentEvent.name === "ЗОЛОТАЯ ЛИХОРАДКА") ? 15 : 5;
                 if (player.skinId === 'midas') reward = Math.floor(reward * 1.4); 
                 score += reward; 
-                for (let i = 0; i < 15; i++) spawnParticle(ch.x + 13, ch.y + 12, '#ffea00');
                 saveProgress(); 
             }
         });
@@ -684,7 +671,6 @@ function updateCoinsCheck() {
                 bullets = bullets.filter(item => item !== b);
                 if (player.parryActive > 0) { 
                     comboCount++; score += 2;
-                    for (let i = 0; i < 8; i++) spawnParticle(b.x, b.y, 'cyan');
                 } else if (player.invulnerable <= 0) { handleDeath(); }
             }
         });
@@ -713,7 +699,6 @@ function updateCoinsCheck() {
                     enemies = enemies.filter(item => item !== e);
                     comboCount++; score += 3; 
                     freezeFrame = 5;
-                    for (let i = 0; i < 12; i++) spawnParticle(e.x + e.width/2, e.y + e.height/2, '#ff1111');
                     saveProgress();
                 } else if (player.invulnerable <= 0) { 
                     handleDeath(); 
@@ -727,7 +712,6 @@ function updateCoinsCheck() {
                 player.vy = -8;
                 player.parryActive = 0;
                 freezeFrame = 8;
-                for (let i = 0; i < 15; i++) spawnParticle(player.x + 13, player.y, '#00ffff');
                 if (boss.hp <= 0) {
                     boss = null; door.open = true; score += 50; saveProgress();
                 }
@@ -739,19 +723,6 @@ function updateCoinsCheck() {
         if (currentEvent.name === "ЗВЕЗДНЫЙ ДОЖДЬ" && Math.random() < 0.02) {
             bullets.push({ x: Math.random() * 740 + 20, y: 10, vx: (Math.random() - 0.5) * 2, vy: 4 });
         }
-
-        dashEchoes.forEach(echo => {
-            ctx.save(); ctx.globalAlpha = echo.alpha; ctx.fillStyle = echo.color;
-            ctx.fillRect(echo.x, echo.y, 26, 44); ctx.restore(); echo.alpha -= 0.05;
-        });
-        dashEchoes = dashEchoes.filter(echo => echo.alpha > 0);
-
-        particles.forEach(p => {
-            p.x += p.vx; p.y += p.vy; p.alpha -= 0.02;
-            ctx.save(); ctx.globalAlpha = p.alpha; ctx.fillStyle = p.color;
-            ctx.fillRect(p.x, p.y, p.size, p.size); ctx.restore();
-        });
-        particles = particles.filter(p => p.alpha > 0);
 
         if (player.hookActive) {
             ctx.strokeStyle = 'yellow'; ctx.lineWidth = 2; ctx.beginPath();
@@ -806,7 +777,13 @@ document.getElementById('downloadBtn').onclick = () => {
 };
 
 generateNewLevel();
-gameLoop();
+requestAnimationFrame(gameLoop);
+
+if ('serviceWorker' in navigator) {
+    const swCode = "self.addEventListener('fetch', function(e){ e.respondWith(fetch(e.request).catch(function(){return new Response('offline');})); });";
+    const blob = new Blob([swCode], {type: 'application/javascript'});
+    navigator.serviceWorker.register(URL.createObjectURL(blob));
+}
 </script>
 </body>
 </html>
